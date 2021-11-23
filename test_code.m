@@ -6,8 +6,8 @@ P = zeros(1,n); % Initializes Loads
 
 %% 1. Point Loading Analysis (SFD, BMD)
 load = -318;
-[SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
 
 %% 2. Define cross-sections
 % There are many (more elegant ways) to construct cross-section objects
@@ -22,7 +22,8 @@ a = [400 400 400]; % Diaphragm Spacing
 ws = [77.46 77.46 77.46] % Web Spacing
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
-VisualizeBridge(xc, bft, tft, hw, tw, ws, bfb, tfb ); 
+VisualizeBridge(xc, bft, tft, hw, tw, ws, bfb, tfb); 
+
 %% 3. Define Material Properties
 SigT = 30;
 SigC = 6;
@@ -31,12 +32,13 @@ TauU = 4;
 TauG = 2;
 mu = 0.2;
 
-function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads )
+[Y_bridge, I_bridge, Q_bridge] = SectionProperties(xc, bft, tft, hw, tw, ws, bfb, tfb, n );
+
+function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
 % Constructs SFD and BMD from application of 1 Point Load. Assumes fixed location of supports
 %   Input: location and magnitude of point load. The previous Loads can be entered as input to 
 %       construct SFD of multiple point loads
 %   Output: SFD, BMD, Loads, all 1-D arrays of length n
-    global n
     Loads(xP) = P;
     moment = 0;
     force = 0;
@@ -103,5 +105,60 @@ function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft )
 
         % Defines axis
         axis([0 (2 * start_cord(1) + tfw(i)) 0 (2 * start_cord(2) + top_coordinate)]);
+    end
+end
+
+function [ Y_bar, I, Q ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw, bft, n )
+    % Calculates important sectional properties. Including but not limited to ybar, I, Q, etc.
+    %    Input: cross section changes x cordinates, top flange width, top flange thinckness, web height, web thickness, web spacing,
+    %        bottom flange width, bottom flange thickness
+    % Output: Sectional Properties at every value of x. Each property is a 1-D array of length n
+
+    Y_bar = zeros(1,n);
+    I = zeros(1, n);
+
+    for i = 1:length(csc)
+         heights(i) = (tft(i) + wh(i) + bft(i));
+    end
+    
+    n
+    max_height = ceil(max(heights));
+    Q = zeros(max_height,n)
+
+    for i = 1:length(csc)
+        % Areas for features
+        A_top = tfw(i) * tft(i);
+        A_webs = wt(i) * wh(i);
+        A_bot = bft(i) * bfw(i);
+        
+        % Local centriods for features
+        Y_top = (tft(i)/2 + wh(i) + bft(i));
+        Y_webs = (wh(i)/2 + bft(i));
+        Y_bot = (bft(i)/2);
+        
+        % I for features
+        I_top = (tfw(i) * (tft(i) ^ 3)) /12;
+        I_webs = (wt(i) * (wh(i) ^ 3)) /12;
+        I_bot = (bfw(i) * (bft(i) ^ 3)) /12;
+
+        % Calculates I, Y and Q for cross-section
+        Y_section = ((A_top * Y_top) + (A_webs * Y_webs) + (A_bot * Y_bot )) / (A_bot + A_top + A_webs);
+        I_section = (I_top + (A_top * (Y_top ^ 2))) + (I_webs + (A_webs * (Y_webs ^ 2))) + (I_bot + (A_bot * (Y_bot ^ 2)));
+        %Q_section =
+
+        % Adds I, Y and Q for every x value of cross-section
+        if i ~= 1
+            for j = csc(i-1):csc(i)
+                Y_bar(j+1) = Y_section;
+                I(j+1) = I_section;
+                %Q(j+1) = Q_section;
+            end
+        else
+            for j = 1:csc(i)
+                Y_bar(j+1) = Y_section;
+                I(j+1) = I_section;
+                %Q(j+1) = Q_section;
+            end
+        end
     end
 end
