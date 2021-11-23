@@ -19,9 +19,10 @@ tw = [1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
 bfb = [80 80 80]; % Bottom Flange Width
 tfb = [1.27 1.27 1.27]; % Bottom Flange Thickness
 a = [400 400 400]; % Diaphragm Spacing
+ws = [77.46 77.46 77.46] % Web Spacing
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
-VisualizeBridge( {CrossSectionInputs} ); 
+VisualizeBridge(xc, bft, tft, hw, tw, ws, bfb, tfb ); 
 %% 3. Define Material Properties
 SigT = 30;
 SigC = 6;
@@ -79,8 +80,28 @@ function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads )
     set(gca, 'XAxisLocation', 'origin', 'YAxisLocation', 'origin')
 end
 
-function [ ] = VisualizeBridge( {Geometric Inputs} )
-    % Optional. Provides a graphical interpretation of user geometric inputs
+function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft )
+    % Provides a graphical interpretation of user geometric inputs
+    %    Input: cross section changes x cordinates, top flange width, top flange thinckness, web height, web thickness, web spacing,
+    %        bottom flange width, bottom flange thickness
+    %    Output: none
     
+    % initial cooridates of cross section
+    start_cord = [5 5];
+    for i = 1:length(csc)
+        % Calculates basic coordinates of features
+        top_coordinate = start_cord(2) + bft(i) + wh(i) + tft(i);
+        left_web_cord = ((tfw(i) - ws(i)) / 2) - wt(i);
+        bot_flang_cord = start_cord(1) + ((tfw(i) - bfw(i)) / 2);
+        
+        % Draws rectangles for features
+        figure;
+        rectangle('position', [ start_cord(1) (top_coordinate - tft(i)) tfw(i) tft(i) ]);
+        rectangle('position', [ (start_cord(1) + left_web_cord) (start_cord(2) + bft(i)) wt(i) wh(i)]);
+        rectangle('Position', [ (start_cord(1) + tfw(i) - (left_web_cord) - wt(i)) (start_cord(2) + bft(i)) wt(i) wh(i)]);
+        rectangle('position', [ bot_flang_cord start_cord(2) bfw(i) bft(i)]);
 
+        % Defines axis
+        axis([0 (2 * start_cord(1) + tfw(i)) 0 (2 * start_cord(2) + top_coordinate)]);
+    end
 end
