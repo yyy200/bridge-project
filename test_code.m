@@ -9,6 +9,27 @@ load = -318;
 [SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P); % Construct SFD, BMD
 
+%% 2. Define cross-sections
+% There are many (more elegant ways) to construct cross-section objects
+xc = [0 550 L]; % Location, x, of cross-section change
+bft = [100 100 100]; % Top Flange Width
+tft = [2.54 2.54 2.54]; % Top Flange Thickness
+hw = [100 120 100]; % Web Height
+tw = [1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
+bfb = [80 80 80]; % Bottom Flange Width
+tfb = [1.27 1.27 1.27]; % Bottom Flange Thickness
+a = [400 400 400]; % Diaphragm Spacing
+
+% Optional but you need to ensure that your geometric inputs are correctly implemented
+VisualizeBridge( {CrossSectionInputs} ); 
+%% 3. Define Material Properties
+SigT = 30;
+SigC = 6;
+E = 4000;
+TauU = 4;
+TauG = 2;
+mu = 0.2;
+
 function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads )
 % Constructs SFD and BMD from application of 1 Point Load. Assumes fixed location of supports
 %   Input: location and magnitude of point load. The previous Loads can be entered as input to 
@@ -56,4 +77,10 @@ function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads )
     figure;
     plot(x, BMD)
     set(gca, 'XAxisLocation', 'origin', 'YAxisLocation', 'origin')
+end
+
+function [ ] = VisualizeBridge( {Geometric Inputs} )
+    % Optional. Provides a graphical interpretation of user geometric inputs
+    
+
 end
