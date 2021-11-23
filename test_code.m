@@ -52,6 +52,8 @@ function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads )
     BMD = cumtrapz(x, SFD);
     
     plot(x, SFD)
+    set(gca, 'XAxisLocation', 'origin', 'YAxisLocation', 'origin')
     figure;
     plot(x, BMD)
+    set(gca, 'XAxisLocation', 'origin', 'YAxisLocation', 'origin')
 end
