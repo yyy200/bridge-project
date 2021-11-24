@@ -38,7 +38,7 @@ mu = 0.2;
 
 [Y_bridge, I_bridge, Q_bridge, b_bridge] = SectionProperties(xc, bft, tft, hw, tw, ws, bfb, tfb, rtw, rtt, rbw, rbt, n );
 
-%y = [1:124*1000];
+%y = [1:124];
 %plot(y, Q_bridge(1, 1:end));
 
 [v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
@@ -135,7 +135,7 @@ function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw
         cross_section_shape = addboundary(cross_section_shape, inside_x_cords, inside_y_cords);
 
         plot(cross_section_shape)
-        [p, pp] = centroid(cross_section_shape)
+        %[p, pp] = centroid(cross_section_shape)
         
     end
 end
