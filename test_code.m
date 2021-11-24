@@ -38,11 +38,6 @@ mu = 0.2;
 
 [Y_bridge, I_bridge, Q_bridge] = SectionProperties(xc, bft, tft, hw, tw, ws, bfb, tfb, rtw, rtt, rbw, rbt, n );
 
-y = [1:124];
-Q_bridge(1, 64)
-plot(Q_bridge(1, 1:end))
-Y_bridge(1)
-
 %%
 function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
 % Constructs SFD and BMD from application of 1 Point Load. Assumes fixed location of supports
@@ -170,7 +165,7 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
         Y_webs = (wh(i)/2 + bft(i));
         Y_bot = (bft(i)/2);
         Y_r_top = (wh(i) + bft(i) - rtt(i)/2);
-        Y_r_bot = (bft(i) + rbt(i)/2)
+        Y_r_bot = (bft(i) + rbt(i)/2);
         
         % I for features
         I_top = (tfw(i) * (tft(i) ^ 3)) /12;
@@ -182,29 +177,41 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
         % Calculates I, Y and Q for cross-section
         Y_section = ((A_top * Y_top) + (A_webs * Y_webs) + (A_bot * Y_bot ) + (A_r_top * Y_r_top) + (A_r_bot * Y_r_bot)) / (A_bot + A_top + A_webs + A_r_bot + A_r_top);
         I_section = (I_top + (A_top * (Y_top ^ 2))) + (I_webs + (A_webs * (Y_webs ^ 2))) + (I_bot + (A_bot * (Y_bot ^ 2))) + (I_r_top + (A_r_top * (Y_r_top ^ 2))) + (I_r_bot + (A_r_bot * (Y_r_bot ^ 2)));
- 
+
         % Adds I and Y_bar for every x value of cross-section
         if i ~= length(csc)
             for j = csc(i):(csc(i+1)-1)
                 Y_bar(j+1) = Y_section;
                 I(j+1) = I_section;
-
                 for y = 1:(tft(i) + wh(i) + bft(i));
-                    if y <= bft(i);
+                    if y <= bft(i)
                         sub_area = y * bfw(i);
                         sub_centriod = (bft(i) - y)/2;
-                        d = abs((Y_bar(csc(i) + 1) - sub_centriod));
+                        d = abs(Y_bar(csc(i) + 1) - sub_centriod);
                         Q(j+1, y) = sub_area * d;
-                    elseif bft(i) < y && y <= (bft(i) + wh(i));
+                    elseif bft(i) < y && y <= (bft(i) + rbt(i))
                         web_height = y - bft(i);
-                        sub_area = A_bot + (2 * web_height  * wt(i));
+                        sub_area = A_bot + (2 * web_height  * (wt(i) + rbw(i)));
                         sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i)))) / sub_area;
+                        d = abs(Y_bar(csc(i) + 1) - sub_centriod);
+                        Q(j+1, y) = sub_area * d;
+                    elseif (bft(i) + rbt(i)) < y && y <= (bft(i) + wh(i) - rtt(i))
+                        web_height = y - bft(i) - rbt(i);
+                        sub_area = A_bot + (2 * web_height  * wt(i)) + A_r_bot;
+                        sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i) + rbt(i))) + (A_r_bot * Y_r_bot)) / sub_area;
+                        d = abs(Y_bar(csc(i) + 1) - sub_centriod);
+                        Q(j+1, y) = sub_area * d;
+                    elseif  (bft(i) + wh(i) - rtt(i)) < y && y <= (bft(i) + wh(i))
+                        web_height = y - wh(i) + rtt(i) - bft(i);
+                        main_web_area =  (2 * (wh(i) - rtt(i)) * wt(i));
+                        sub_area = A_bot + (2 * web_height  * (wt(i) + rtw(i))) + A_r_bot + main_web_area;
+                        sub_centriod = ((A_bot * Y_bot) + (2 * web_height * (wt(i) + rtw(i)) * ((web_height / 2) + bft(i) + (wh(i) - rtt(i)))) + (A_r_bot * Y_r_bot) + (main_web_area * (((wh(i) - rtt(i))/2) + bft(i)))) / sub_area;
                         d = abs(Y_bar(csc(i) + 1) - sub_centriod);
                         Q(j+1, y) = sub_area * d;
                     else
                         top_height = y - wh(i) - bft(i);
-                        sub_area = A_bot + A_webs + (top_height * tfw(i));
-                        sub_centriod = ((A_bot * Y_bot) + (A_webs * Y_webs) + (top_height * tfw(i) * ((top_height / 2) + wh(i) + bft(i)))) / sub_area;
+                        sub_area = A_bot + A_webs + (top_height * tfw(i)) + A_r_bot + A_r_top;
+                        sub_centriod = ((A_bot * Y_bot) + (A_webs * Y_webs) + (A_r_top * Y_r_top) + (A_r_bot * Y_r_bot) + (top_height * tfw(i) * ((top_height / 2) + wh(i) + bft(i)))) / sub_area;
                         d = abs(Y_bar(csc(i) + 1) - sub_centriod);
                         Q(j+1, y) = sub_area * d;
                     end
@@ -214,23 +221,34 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
             for j = csc(i):(n)
                 Y_bar(j) = Y_section;
                 I(j) = I_section;
-
                 for y = 1:(tft(i) + wh(i) + bft(i))
                     if y <= bft(i)
                         sub_area = y * bfw(i);
                         sub_centriod = (bft(i) - y)/2;
                         d = abs(Y_bar(csc(i)) - sub_centriod);
                         Q(j, y) = sub_area * d;
-                    elseif bft(i) < y && y <= (bft(i) + wh(i))
+                    elseif bft(i) < y && y <= (bft(i) + rbt(i))
                         web_height = y - bft(i);
-                        sub_area = A_bot + (2 * web_height  * wt(i));
+                        sub_area = A_bot + (2 * web_height  * (wt(i) + rbw(i)));
                         sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i)))) / sub_area;
                         d = abs(Y_bar(csc(i)) - sub_centriod);
                         Q(j, y) = sub_area * d;
+                    elseif (bft(i) + rbt(i)) < y && y <= (bft(i) + wh(i) - rtt(i))
+                        web_height = y - bft(i) - rbt(i);
+                        sub_area = A_bot + (2 * web_height  * wt(i)) + A_r_bot;
+                        sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i) + rbt(i))) + (A_r_bot * Y_r_bot)) / sub_area;
+                        d = abs(Y_bar(csc(i)) - sub_centriod);
+                        Q(j, y) = sub_area * d;
+                    elseif  (bft(i) + wh(i) - rtt(i)) < y && y <= (bft(i) + wh(i))
+                        web_height = y - wh(i) + rtt(i) - bft(i);
+                        main_web_area =  (2 * (wh(i) - rtt(i)) * wt(i));
+                        sub_area = A_bot + (2 * web_height  * (wt(i) + rtw(i))) + A_r_bot + main_web_area;
+                        sub_centriod = ((A_bot * Y_bot) + (2 * web_height * (wt(i) + rtw(i)) * ((web_height / 2) + bft(i) + (wh(i) - rtt(i)))) + (A_r_bot * Y_r_bot) + (main_web_area * (((wh(i) - rtt(i))/2) + bft(i)))) / sub_area;
+                        Q(j, y) = sub_area * d;
                     else
                         top_height = y - wh(i) - bft(i);
-                        sub_area = A_bot + A_webs + (top_height * tfw(i));
-                        sub_centriod = ((A_bot * Y_bot) + (A_webs * Y_webs) + (top_height * tfw(i) * ((top_height / 2) + wh(i) + bft(i)))) / sub_area;
+                        sub_area = A_bot + A_webs + (top_height * tfw(i)) + A_r_bot + A_r_top;
+                        sub_centriod = ((A_bot * Y_bot) + (A_webs * Y_webs) + (A_r_top * Y_r_top) + (A_r_bot * Y_r_bot) + (top_height * tfw(i) * ((top_height / 2) + wh(i) + bft(i)))) / sub_area;
                         d = abs(Y_bar(csc(i)) - sub_centriod);
                         Q(j, y) = sub_area * d;
                     end
