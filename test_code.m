@@ -43,6 +43,9 @@ mu = 0.2;
 
 [v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
 
+[V_fail_buck] = VfailBuck(xc, tw, a, hw, E, mu, n );
+
+
 %%
 function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
 % Constructs SFD and BMD from application of 1 Point Load. Assumes fixed location of supports
@@ -299,4 +302,25 @@ function [ V_fail ] = Vfail( I, b, Y_bar, TauU, Q)
     
     V_fail = TauU .* I .* bcent ./ Qcent;
     
-    end    
+    end   
+    
+    function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n )
+        % Calculates shear forces at every value of x that would cause a shear buckling failure in the web
+        % Input: Sectional Properties (list of 1-D arrays), E, mu (material property)
+        % Output: V_Buck a 1-D array of length n
+
+        
+        factor = (5 * (pi ^ 2) * E ) / (12 * (1 - (mu ^ 2) ));
+
+        a_values = zeros(1, n);
+        web_thicknesses = zeros(1, n);
+        web_heights = zeros(1, n);
+        V_Buck = zeros(1, n);
+        for i = 1:(length(csc)-1)
+            web_thicknesses((csc(i)+1):(csc(i+1))) = wt(i);
+            web_hights((csc(i)+1):(csc(i+1))) = wh(i);
+            a_values((csc(i)+1):(csc(i+1))) = ds(i);
+        end
+       
+        V_Buck = factor .* (((web_thicknesses ./ web_hights) .^ 2) + ((web_thicknesses ./ a_values) .^ 2));
+    end
