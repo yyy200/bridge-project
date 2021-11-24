@@ -11,22 +11,22 @@ load = -318;
 
 %% 2. Define cross-sections
 % There are many (more elegant ways) to construct cross-section objects
-xc = [0 550 L]; % Location, x, of cross-section change
-bft = [100 100 100]; % Top Flange Width
-tft = [2.54 2.54 2.54]; % Top Flange Thickness
-hw = [100 120 100]; % Web Height
-tw = [1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
-bfb = [80 80 80]; % Bottom Flange Width
-tfb = [1.27 1.27 1.27]; % Bottom Flange Thickness
-a = [400 400 400]; % Diaphragm Spacing
-ws = [77.46 77.46 77.46]; % Web Spacing
-rtw = [10 10 10]; % little rectanges at top of webs for glue area width
-rtt = [1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
-rbw = [0 0 0]; % little rectanges at bottom of webs for glue area width
-rbt = [0 0 0]; % little rectanges at bottom of webs for glue area thickness
+xc = [0 550 1060 L]; % Location, x, of cross-section change
+tfw = [100 100 100 100]; % Top Flange Width
+tft = [1.27 1.27 1.27 1.27]; % Top Flange Thickness
+hw = [72.46 72.46 72.46 72.46]; % Web Height
+tw = [1.27 1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
+bfw = [80 80 80 80]; % Bottom Flange Width
+bft = [1.27 1.27 1.27 1.27]; % Bottom Flange Thickness
+a = [0 550 1060 L]; % Diaphragm x coords
+ws = [77.46 77.46 77.46 77.46]; % Web Spacing
+rtw = [10 10 10 10]; % little rectanges at top of webs for glue area width
+rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
+rbw = [0 0 0 0]; % little rectanges at bottom of webs for glue area width
+rbt = [0 0 0 0]; % little rectanges at bottom of webs for glue area thickness
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
-VisualizeBridge(xc, bft, tft, hw, tw, ws, bfb, tfb, rtw, rtt, rbw, rbt); 
+VisualizeBridge(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
 
 %% 3. Define Material Properties
 SigT = 30;
@@ -36,15 +36,15 @@ TauU = 4;
 TauG = 2;
 mu = 0.2;
 
-[Y_bridge, I_bridge, Q_bridge, b_bridge] = SectionProperties(xc, bft, tft, hw, tw, ws, bfb, tfb, rtw, rtt, rbw, rbt, n );
+[Y_bridge, I_bridge, Q_bridge, b_bridge] = SectionProperties(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt, n );
 
-%y = [1:124];
+%y = [1:124*1000];
 %plot(y, Q_bridge(1, 1:end));
 
 [v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
+[ v_buck ] = VfailBuck(xc, tw, a, hw, E, mu, n, I_bridge, b_bridge, Y_bridge, Q_bridge);
 
-[V_fail_buck] = VfailBuck(xc, tw, a, hw, E, mu, n );
-
+VisulizePL(x, SFD_PL, BMD_PL, v_fail, v_buck);
 
 %%
 function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
@@ -87,12 +87,6 @@ function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
     
     % Integrates SFD
     BMD = cumtrapz(x, SFD);
-    
-    plot(x, SFD)
-    set(gca, 'XAxisLocation', 'origin', 'YAxisLocation', 'origin')
-    figure;
-    plot(x, BMD)
-    set(gca, 'XAxisLocation', 'origin', 'YAxisLocation', 'origin', 'YDir', 'reverse')
 end
 
 %%
@@ -133,12 +127,17 @@ function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw
         inside_y_cords = [bft(i) y_rectangle_bot y_rectangle_bot y_rectangle_top y_rectangle_top y_top_flang_bot_cord y_top_flang_bot_cord y_rectangle_top y_rectangle_top y_rectangle_bot y_rectangle_bot bft(i)];
 
         % Draws rectangles for features
-        figure;
         cross_section_shape = polyshape(outside_x_cords, outside_y_cords);
         cross_section_shape = addboundary(cross_section_shape, inside_x_cords, inside_y_cords);
 
+        subplot(ceil(length(csc)/ 2), ceil(length(csc)/ 2), i)
         plot(cross_section_shape)
-        %[p, pp] = centroid(cross_section_shape)
+        if i ~= 1
+            title("Cross Section from x =" + csc(i-1) + " to " + csc(i))
+        else
+            title("Cross Section at x = 0")
+        end
+        axis equal
         
     end
 end
@@ -302,25 +301,95 @@ function [ V_fail ] = Vfail( I, b, Y_bar, TauU, Q)
     
     V_fail = TauU .* I .* bcent ./ Qcent;
     
-    end   
-    
-    function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n )
-        % Calculates shear forces at every value of x that would cause a shear buckling failure in the web
-        % Input: Sectional Properties (list of 1-D arrays), E, mu (material property)
-        % Output: V_Buck a 1-D array of length n
+end    
+
+function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n, I, b, Y_bar, Q)
+    % Calculates shear forces at every value of x that would cause a shear buckling failure in the web
+    %   Input: Sectional Properties (list of 1-D arrays), E, mu (material property)
+    %   Output: V_Buck a 1-D array of length n
 
         
-        factor = (5 * (pi ^ 2) * E ) / (12 * (1 - (mu ^ 2) ));
+    factor = (5 * (pi ^ 2) * E ) / (12 * (1 - (mu ^ 2) ));
 
-        a_values = zeros(1, n);
-        web_thicknesses = zeros(1, n);
-        web_heights = zeros(1, n);
-        V_Buck = zeros(1, n);
-        for i = 1:(length(csc)-1)
-            web_thicknesses((csc(i)+1):(csc(i+1))) = wt(i);
-            web_hights((csc(i)+1):(csc(i+1))) = wh(i);
-            a_values((csc(i)+1):(csc(i+1))) = ds(i);
-        end
-       
-        V_Buck = factor .* (((web_thicknesses ./ web_hights) .^ 2) + ((web_thicknesses ./ a_values) .^ 2));
+    a_values = zeros(1, n);
+    web_thicknesses = zeros(1, n);
+    web_heights = zeros(1, n);
+    V_Buck = zeros(1, n);
+    for i = 1:(length(csc)-1)
+        web_thicknesses((csc(i)+1):(csc(i+1))) = wt(i);
+        web_heights((csc(i)+1):(csc(i+1))) = wh(i);
+        a_values((csc(i)+1):(csc(i+1))) = ds(i+1) - ds(i);
     end
+       
+    TauCrit = factor .* (((web_thicknesses ./ web_heights) .^ 2) + ((web_thicknesses ./ a_values) .^ 2));
+
+    [ V_Buck ] = Vfail( I, b, Y_bar, TauCrit, Q);
+
+end
+
+function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck)
+    
+    figure('WindowState', 'maximized')
+
+    % Plots SFD for Pfail
+    subplot(2,3,1);
+    hold on;
+    plot(x, SFD);
+
+    set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin');
+    title('SFD from P = 315N, Pfail = ')
+    xlim([0,x(end)])
+    grid on;
+    grid minor
+    box on;
+    yline(0)
+
+
+    % Plots BMD vs V_buck
+    subplot(2,3,2);
+    hold on;
+    plot(x, SFD);
+    plot(x, V_fail, 'r--');
+    plot(x, -V_fail, 'r--');
+    set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin');
+    title('SFD vs Material Shear Failure')
+    xlim([0,x(end)])
+    grid on;
+    grid minor
+    box on;
+    ylim([-max(V_fail) - 100, max(V_fail) + 100])
+    yline(0)
+
+    % Plots SFD vs V_buck
+    subplot(2,3,3);
+    hold on;
+    
+    plot(x, SFD);
+    plot(x, V_buck, 'r--');
+    plot(x, -V_buck, 'r--');
+    
+    set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin');
+    title('SFD vs Shear Buckling Failure')
+    
+    xlim([0,x(end)]);
+    ylim([-max(V_buck) - 100, max(V_buck) + 100]);
+    yline(0);
+
+    grid on;
+    grid minor;
+    box on;
+    
+    % Plots BMD for Pfail
+    subplot(2,3,4);
+    hold on;
+    plot(x, BMD);
+
+    set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin', 'YDir', 'reverse');
+    title('BMD from P = 315N, Pfail = ')
+    xlim([0,x(end)])
+    grid on;
+    grid minor
+    box on;
+    yline(0)
+
+end
