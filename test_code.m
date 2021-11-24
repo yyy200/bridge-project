@@ -36,7 +36,12 @@ TauU = 4;
 TauG = 2;
 mu = 0.2;
 
-[Y_bridge, I_bridge, Q_bridge] = SectionProperties(xc, bft, tft, hw, tw, ws, bfb, tfb, rtw, rtt, rbw, rbt, n );
+[Y_bridge, I_bridge, Q_bridge, b_bridge] = SectionProperties(xc, bft, tft, hw, tw, ws, bfb, tfb, rtw, rtt, rbw, rbt, n );
+
+%y = [1:124*1000];
+%plot(y, Q_bridge(1, 1:end));
+
+[v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
 
 %%
 function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
@@ -151,6 +156,7 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
     
     max_height = ceil(max(heights));
     Q = zeros(n, max_height);
+    b = zeros(n, max_height);
 
     for i = 1:length(csc)
         % Areas for features
@@ -174,41 +180,52 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
         I_r_top = 2 * (rtw(i) * (rtt(i) ^ 3)) /12;
         I_r_bot = 2 * (rbw(i) * (rbt(i) ^ 3)) /12;
 
-        % Calculates I, Y and Q for cross-section
+        % Calculates I and Y for cross-section
         Y_section = ((A_top * Y_top) + (A_webs * Y_webs) + (A_bot * Y_bot ) + (A_r_top * Y_r_top) + (A_r_bot * Y_r_bot)) / (A_bot + A_top + A_webs + A_r_bot + A_r_top);
-        I_section = (I_top + (A_top * (Y_top ^ 2))) + (I_webs + (A_webs * (Y_webs ^ 2))) + (I_bot + (A_bot * (Y_bot ^ 2))) + (I_r_top + (A_r_top * (Y_r_top ^ 2))) + (I_r_bot + (A_r_bot * (Y_r_bot ^ 2)));
+        I_section = (I_top + (A_top * ((Y_section - Y_top) ^ 2))) + (I_webs + (A_webs * ((Y_section - Y_webs) ^ 2))) + (I_bot + (A_bot * ((Y_section - Y_bot) ^ 2))) + (I_r_top + (A_r_top * ((Y_section - Y_r_top) ^ 2))) + (I_r_bot + (A_r_bot * ((Y_section - Y_r_bot) ^ 2)));
 
-        % Adds I and Y_bar for every x value of cross-section
+        % Calculates Q, Adds I, Q and Y_bar for every x value of cross-section
         if i ~= length(csc)
             for j = csc(i):(csc(i+1)-1)
                 Y_bar(j+1) = Y_section;
                 I(j+1) = I_section;
-                for y = 1:(tft(i) + wh(i) + bft(i));
+                
+                for y = 1:((tft(i) + wh(i) + bft(i)));
+
                     if y <= bft(i)
+                        b(j+1, y) = bft(i);
                         sub_area = y * bfw(i);
                         sub_centriod = (bft(i) - y)/2;
                         d = abs(Y_bar(csc(i) + 1) - sub_centriod);
                         Q(j+1, y) = sub_area * d;
+
                     elseif bft(i) < y && y <= (bft(i) + rbt(i))
+                        b(j+1, y) = 2 * (rbw(i) + wt(i));
                         web_height = y - bft(i);
                         sub_area = A_bot + (2 * web_height  * (wt(i) + rbw(i)));
                         sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i)))) / sub_area;
                         d = abs(Y_bar(csc(i) + 1) - sub_centriod);
                         Q(j+1, y) = sub_area * d;
+
                     elseif (bft(i) + rbt(i)) < y && y <= (bft(i) + wh(i) - rtt(i))
+                        b(j+1, y) = 2 * wt(i);
                         web_height = y - bft(i) - rbt(i);
                         sub_area = A_bot + (2 * web_height  * wt(i)) + A_r_bot;
                         sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i) + rbt(i))) + (A_r_bot * Y_r_bot)) / sub_area;
                         d = abs(Y_bar(csc(i) + 1) - sub_centriod);
                         Q(j+1, y) = sub_area * d;
+
                     elseif  (bft(i) + wh(i) - rtt(i)) < y && y <= (bft(i) + wh(i))
+                        b(j+1, y) = 2 * (rtw(i) + wt(i));
                         web_height = y - wh(i) + rtt(i) - bft(i);
                         main_web_area =  (2 * (wh(i) - rtt(i)) * wt(i));
                         sub_area = A_bot + (2 * web_height  * (wt(i) + rtw(i))) + A_r_bot + main_web_area;
                         sub_centriod = ((A_bot * Y_bot) + (2 * web_height * (wt(i) + rtw(i)) * ((web_height / 2) + bft(i) + (wh(i) - rtt(i)))) + (A_r_bot * Y_r_bot) + (main_web_area * (((wh(i) - rtt(i))/2) + bft(i)))) / sub_area;
                         d = abs(Y_bar(csc(i) + 1) - sub_centriod);
                         Q(j+1, y) = sub_area * d;
+
                     else
+                        b(j+1, y) = tfw(i);
                         top_height = y - wh(i) - bft(i);
                         sub_area = A_bot + A_webs + (top_height * tfw(i)) + A_r_bot + A_r_top;
                         sub_centriod = ((A_bot * Y_bot) + (A_webs * Y_webs) + (A_r_top * Y_r_top) + (A_r_bot * Y_r_bot) + (top_height * tfw(i) * ((top_height / 2) + wh(i) + bft(i)))) / sub_area;
@@ -221,31 +238,41 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
             for j = csc(i):(n)
                 Y_bar(j) = Y_section;
                 I(j) = I_section;
-                for y = 1:(tft(i) + wh(i) + bft(i))
+                for y = 1:((tft(i) + wh(i) + bft(i)))
+
                     if y <= bft(i)
+                        b(j, y) = bft(i);
                         sub_area = y * bfw(i);
                         sub_centriod = (bft(i) - y)/2;
                         d = abs(Y_bar(csc(i)) - sub_centriod);
                         Q(j, y) = sub_area * d;
+
                     elseif bft(i) < y && y <= (bft(i) + rbt(i))
+                        b(j, y) = 2 * (rbw(i) + wt(i));
                         web_height = y - bft(i);
                         sub_area = A_bot + (2 * web_height  * (wt(i) + rbw(i)));
                         sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i)))) / sub_area;
                         d = abs(Y_bar(csc(i)) - sub_centriod);
                         Q(j, y) = sub_area * d;
+
                     elseif (bft(i) + rbt(i)) < y && y <= (bft(i) + wh(i) - rtt(i))
+                        b(j, y) = 2 * wt(i);
                         web_height = y - bft(i) - rbt(i);
                         sub_area = A_bot + (2 * web_height  * wt(i)) + A_r_bot;
                         sub_centriod = ((A_bot * Y_bot) + ((2 * web_height * wt(i)) * ((web_height / 2) + bft(i) + rbt(i))) + (A_r_bot * Y_r_bot)) / sub_area;
                         d = abs(Y_bar(csc(i)) - sub_centriod);
                         Q(j, y) = sub_area * d;
+
                     elseif  (bft(i) + wh(i) - rtt(i)) < y && y <= (bft(i) + wh(i))
+                        b(j, y) = 2 * (rtw(i) + wt(i));
                         web_height = y - wh(i) + rtt(i) - bft(i);
                         main_web_area =  (2 * (wh(i) - rtt(i)) * wt(i));
                         sub_area = A_bot + (2 * web_height  * (wt(i) + rtw(i))) + A_r_bot + main_web_area;
                         sub_centriod = ((A_bot * Y_bot) + (2 * web_height * (wt(i) + rtw(i)) * ((web_height / 2) + bft(i) + (wh(i) - rtt(i)))) + (A_r_bot * Y_r_bot) + (main_web_area * (((wh(i) - rtt(i))/2) + bft(i)))) / sub_area;
                         Q(j, y) = sub_area * d;
+
                     else
+                        b(j, y) = tfw(i);
                         top_height = y - wh(i) - bft(i);
                         sub_area = A_bot + A_webs + (top_height * tfw(i)) + A_r_bot + A_r_top;
                         sub_centriod = ((A_bot * Y_bot) + (A_webs * Y_webs) + (A_r_top * Y_r_top) + (A_r_bot * Y_r_bot) + (top_height * tfw(i) * ((top_height / 2) + wh(i) + bft(i)))) / sub_area;
@@ -259,15 +286,17 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
     end
 end
 
-function [ V_fail ] = Vfail( I, b, TauU )
+function [ V_fail ] = Vfail( I, b, Y_bar, TauU, Q)
     % Calculates shear forces at every value of x that would cause a matboard shear failure
     % Input: Sectional Properties (list of 1-D arrays), TauU (scalar material property)
     % Output: V_fail a 1-D array of length n
-    I = {Sectional Properties};
-    b = {Sectional Properties};
-    Qcent = {Sectional Properties};
+    Qcent = zeros(1,length(Y_bar));
+    bcent = zeros(1,length(Y_bar));
+    for i = 1:length(Y_bar)
+        Qcent(i) = Q(i, ceil(Y_bar(i)));
+        bcent(i) = b(i, ceil(Y_bar(i)));
+    end
     
-    V_fail = TauU .* I .* b ./ Qcent;
-
-
+    V_fail = TauU .* I .* bcent ./ Qcent;
+    
     end    
