@@ -160,7 +160,6 @@ function [ Y_bar, I, Q, b, heights ] = SectionProperties( csc, tfw, tft, wh, wt,
     for i = 1:length(csc)-1
          heights(csc(i)+1:csc(i+1)) = (tft(i) + wh(i) + bft(i));
     end
-    tft(i) + wh(i) + bft(i)
     max_height = ceil(max(heights));
     Q = zeros(n, max_height);
     b = zeros(n, max_height);
@@ -300,8 +299,8 @@ function [ V_fail ] = Vfail( I, b, Y_bar, TauU, Q)
     Qcent = zeros(1,length(Y_bar));
     bcent = zeros(1,length(Y_bar));
     for i = 1:length(Y_bar)
-        Qcent(i) = Q(i, ceil(Y_bar(i)));
-        bcent(i) = b(i, ceil(Y_bar(i)));
+        Qcent(i) = Q(i, round(Y_bar(i)));
+        bcent(i) = b(i, round(Y_bar(i)));
     end
     
     V_fail = TauU .* I .* bcent ./ Qcent;
@@ -549,6 +548,7 @@ function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1,
     buck3 = min(fail_m_buck3(fail_m_buck3>0));
     
     [Pf pp] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3)]);
+    Pf
 
 
  % Construct SFD, BMD
