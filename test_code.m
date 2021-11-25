@@ -446,10 +446,11 @@ function [ M_MatC ] = MfailMatC( I, Y_bar, heights, SigC, BMD ) % Similar to Mfa
     %   Input: Sectional Properties (list of 1-D arrays), SigC (material property), BMD (1-D array)
     %   Output: M_MatC a 1-D array of length n
     for i = 1 : length(BMD)
-        if BMD(i) < 0 % If the moment is positive, the compression failure will be at the top
-            M_MatC(i) = -SigC * I(i) / (heights(i) - Y_bar(i));
-        elseif BMD(i) > 0 % If the moment is negative, the compression failure will be at the bottom
-            M_MatC(i) = SigC * I(i) / Y_bar(i);
+        if BMD(i) > 0 % If the moment is positive, the compression failure will be at the top
+            M_MatC(i) = SigC * I(i) / (heights(i) - Y_bar(i));
+            
+        elseif BMD(i) < 0 % If the moment is negative, the compression failure will be at the bottom
+            M_MatC(i) = -SigC * I(i) / Y_bar(i);
         end
     end
 end
@@ -548,12 +549,5 @@ function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1,
     buck3 = min(fail_m_buck3(fail_m_buck3>0));
     
     [Pf pp] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3)]);
-    Pf
-
-
- % Construct SFD, BMD
-
-
-
 end
     
