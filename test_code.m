@@ -5,7 +5,7 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-load = -318;
+load = -193;
 [SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
 
@@ -36,15 +36,20 @@ TauU = 4;
 TauG = 2;
 mu = 0.2;
 
-[Y_bridge, I_bridge, Q_bridge, b_bridge] = SectionProperties(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt, n );
+[Y_bridge, I_bridge, Q_bridge, b_bridge, section_heights] = SectionProperties(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt, n );
 
-%y = [1:124*1000];
-%plot(y, Q_bridge(1, 1:end));
+
 
 [v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
 [ v_buck ] = VfailBuck(xc, tw, a, hw, E, mu, n, I_bridge, b_bridge, Y_bridge, Q_bridge);
+[ m_mat_tension ] = MfailMatT( I_bridge, Y_bridge, section_heights, SigT, BMD_PL);
+[ m_mat_compression ] = MfailMatC( I_bridge, Y_bridge, section_heights, SigC, BMD_PL );
+[ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
+VisulizePL(x, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3);
 
-VisulizePL(x, SFD_PL, BMD_PL, v_fail, v_buck);
+
+[ Pf ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3 );
+
 
 %%
 function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
@@ -143,7 +148,7 @@ function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw
 end
 
 %%
-function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw, bft, rtw, rtt, rbw, rbt, n )
+function [ Y_bar, I, Q, b, heights ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw, bft, rtw, rtt, rbw, rbt, n )
     % Calculates important sectional properties. Including but not limited to ybar, I, Q, etc.
     %    Input: cross section changes x cordinates, top flange width, top flange thinckness, web height, web thickness, web spacing,
     %        bottom flange width, bottom flange thickness
@@ -152,10 +157,10 @@ function [ Y_bar, I, Q, b ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw,
     Y_bar = zeros(1,n);
     I = zeros(1, n);
 
-    for i = 1:length(csc)
-         heights(i) = (tft(i) + wh(i) + bft(i));
+    for i = 1:length(csc)-1
+         heights(csc(i)+1:csc(i+1)) = (tft(i) + wh(i) + bft(i));
     end
-    
+    tft(i) + wh(i) + bft(i)
     max_height = ceil(max(heights));
     Q = zeros(n, max_height);
     b = zeros(n, max_height);
@@ -327,7 +332,7 @@ function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n, I, b, Y_bar, Q)
 
 end
 
-function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck)
+function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3)
     
     figure('WindowState', 'maximized')
 
@@ -392,4 +397,163 @@ function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck)
     box on;
     yline(0)
 
+    % Plots BMD vs Material Moment Failures
+    subplot(2,3,5);
+    hold on;
+    plot(x, BMD);
+    plot(x, M_MatT)
+    plot(x, M_MatC)
+    
+    set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin', 'YDir', 'reverse');
+    title('BMD vs Material Moment Failures ')
+    xlim([0,x(end)])
+    grid on;
+    grid minor
+    box on;
+    yline(0)
+
+    subplot(2,3,6);
+    hold on;
+    plot(x, BMD);
+    plot(x, M_Buck1);
+    plot(x, M_Buck2);
+    plot(x, M_Buck3);
+    
+    set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin', 'YDir', 'reverse');
+    title('BMD vs Material Moment Failures ')
+    xlim([0,x(end)])
+    grid on;
+    grid minor
+    box on;
+    yline(0)
+
 end
+
+function [ M_MatT ] = MfailMatT( I, Y_bar, heights, SigT, BMD )
+    % Calculates bending moments at every value of x that would cause a matboard tension failure
+    % Input: Sectional Properties (list of 1-D arrays), SigT (material property), BMD (1-D array)
+    % Output: M_MatT a 1-D array of length n
+    for i = 1 : length(BMD)
+        if BMD(i) > 0 % If the moment is positive, the tension failure will be at the bottom
+            M_MatT(i) = SigT * I(i) / (Y_bar(i));
+        elseif BMD(i) < 0 % If the moment is negative, the tension failure will be at the top
+            M_MatT(i) = -SigT * I(i) / (heights(i) - Y_bar(i));
+        end
+    end
+end
+
+function [ M_MatC ] = MfailMatC( I, Y_bar, heights, SigC, BMD ) % Similar to MfailMatT
+    % Calculates bending moments at every value of x that would cause a matboard Compression failure
+    %   Input: Sectional Properties (list of 1-D arrays), SigC (material property), BMD (1-D array)
+    %   Output: M_MatC a 1-D array of length n
+    for i = 1 : length(BMD)
+        if BMD(i) < 0 % If the moment is positive, the compression failure will be at the top
+            M_MatC(i) = -SigC * I(i) / (heights(i) - Y_bar(i));
+        elseif BMD(i) > 0 % If the moment is negative, the compression failure will be at the bottom
+            M_MatC(i) = SigC * I(i) / Y_bar(i);
+        end
+    end
+end
+
+function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, wt, heights, Y_bar, I, E, mu, BMD)
+    % Calculates bending moments at every value of x that would cause a buckling failure
+    % Input: Sectional Properties (list of 1-D arrays), E, mu (material property), BMD (1-D array)
+    % Output: M_MatBuck a 1-D array of length n
+    for c = 1:3
+        if c == 1
+            factor = (4 * (pi ^ 2) * E) / (12 * (1 - (mu ^ 2)));
+            for i = 1:length(BMD);
+                z = find(csc <= i, 1, 'last');
+                if BMD(i) < 0 % if moment negative, compression on bottom
+                    t = bft(z);
+                    y = - Y_bar(i);
+                    b =  ws(z);
+                    M_Buck1(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
+                elseif BMD(i) > 0 % if moment positive, compression on top
+                    t = tft(z);
+                    y = heights(i) - Y_bar(i);
+                    b = ws(z);
+                    M_Buck1(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
+                end
+            end
+        elseif c == 2
+            factor = (0.425 * (pi ^ 2) * E) / (12 * (1 - (mu ^ 2)));
+            for i = 1:length(BMD);
+                z = find(csc <= i, 1, 'last');
+                if BMD(i) < 0 % if moment negative, compression on bottom
+                    t = bft(z);
+                    y = - Y_bar(i);
+                    b = (bfw(z) - (2 * wt(z)) - ws(z)) / 2;
+                    if b ~= 0 && bfw(z) ~= 0
+                        M_Buck2(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
+                    else
+                        M_Buck2(i) = 0;
+                    end
+                elseif BMD(i) > 0 % if moment positive, compression on top
+                    t = tft(z);
+                    y = heights(i) - Y_bar(i);
+                    b = (tfw(z) - ws(z) - (2 * wt(z))) / 2;
+                    if b ~= 0 && tfw(z) ~= 0
+                        M_Buck2(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
+                    else
+                        M_Buck2(i) = 0;
+                    end
+                end
+            end
+        else
+            factor = (6 * (pi ^ 2) * E) / (12 * (1 - (mu ^ 2)));
+            for i = 1:length(BMD);
+                z = find(csc <= i, 1,'last');
+                if BMD(i) < 0 % if moment negative, compression on bottom
+                    t = wt(z);
+                    y = bft(z) - Y_bar(i) ;
+                    b = abs(y);
+                    if b ~= 0
+                        M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
+                    end
+                elseif BMD(i) > 0 % if moment positive, compression on top
+                    t = wt(z);
+                    y = heights(i) - Y_bar(i) - tft(z);
+                    b = abs(y);
+                    if b ~= 0
+                        M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
+                    end
+                end
+            end
+        end
+    end
+end
+
+function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, n )
+    % Calculates the magnitude of the load P that will cause one of the failure mechanisms to occur
+    %   Input: SFD, BMD under the currently applied points loads (P) (each 1-D array of length n)
+    %       {V_Mat, V_Glue, … M_MatT, M_MatC, … } (each 1-D array of length n)
+    %   Output: Failure Load value Pf
+
+    SFD_new = SFD ./ abs(P);
+    BMD_new = BMD ./ abs(P);
+
+    fail_v_mat = V_Mat ./ SFD_new;
+    fail_v_buck = V_Buck ./ SFD_new;
+
+    fail_m_matt = M_MatT ./ BMD_new;
+    fail_m_matc = M_MatC ./ BMD_new;
+    fail_m_buck1 = M_Buck1 ./ BMD_new;
+    fail_m_buck2 = M_Buck2 ./ BMD_new;
+    fail_m_buck3 = M_Buck3 ./ BMD_new;
+
+    matt = min(fail_m_matt(fail_m_matt>0));
+    matc = min(fail_m_matc(fail_m_matc>0));
+    buck1 = min(fail_m_buck1(fail_m_buck1>0));
+    buck2 = min(fail_m_buck2(fail_m_buck2>0));
+    buck3 = min(fail_m_buck3(fail_m_buck3>0));
+    
+    [Pf pp] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3)]);
+
+
+ % Construct SFD, BMD
+
+
+
+end
+    
