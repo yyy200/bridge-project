@@ -10,4 +10,8 @@
 
 - [ ] Write Code
   - [ ] List of Functions
+  - [ ] Fix calculation errors by corss-refrencing manual calculation
+  - [ ] Implement Displacements function
 - [ ] Make Bridge
+-   [ ] Choose cross section(s)
+- [ ] Do manual calulations
