@@ -5,7 +5,7 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-load = -193;
+\load = -200;
 [SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
 
@@ -45,7 +45,7 @@ I_bridge(1)
 [ v_buck ] = VfailBuck(xc, tw, a, hw, E, mu, n, I_bridge, b_bridge, Y_bridge, Q_bridge);
 [ m_mat_tension ] = MfailMatT( I_bridge, Y_bridge, section_heights, SigT, BMD_PL);
 [ m_mat_compression ] = MfailMatC( I_bridge, Y_bridge, section_heights, SigC, BMD_PL );
-[ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
+[ M_Buck1, M_Buck2, M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
 
 [ Pf ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3 );
 % If FailLoad returns 
@@ -140,7 +140,7 @@ function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw
         subplot(ceil(length(csc)/ 2), ceil(length(csc)/ 2), i)
         plot(cross_section_shape)
         if i ~= 1
-            title("Cross Section from x =" + csc(i-1) + " to " + csc(i))
+            title("Cross Section from x = " + csc(i-1) + " to " + csc(i))
         else
             title("Cross Section at x = 0")
         end
@@ -320,7 +320,6 @@ function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n, I, b, Y_bar, Q)
     a_values = zeros(1, n);
     web_thicknesses = zeros(1, n);
     web_heights = zeros(1, n);
-    V_Buck = zeros(1, n);
     for i = 1:(length(csc)-1)
         web_thicknesses((csc(i)+1):(csc(i+1))) = wt(i);
         web_heights((csc(i)+1):(csc(i+1))) = wh(i);
@@ -349,6 +348,8 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     grid minor
     box on;
     yline(0)
+    xlabel('Position on Bridge (mm)')
+    ylabel('Shear Force (N)')
 
 
     % Plots BMD vs V_buck
@@ -366,6 +367,8 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     ylim([-max(V_fail) - 100, max(V_fail) + 100])
     yline(0)
     legend('', '', 'Matboard Shear Failure', '', 'FontSize', 7)
+    xlabel('Position on Bridge (mm)')
+    ylabel('Shear Force (N)')
 
     % Plots SFD vs V_buck
     subplot(2,3,3);
@@ -382,6 +385,8 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     ylim([-max(V_buck) - 100, max(V_buck) + 100]);
     yline(0);
     legend('', '', 'Web Shear Buckling Failure', '', 'FontSize', 7)
+    xlabel('Position on Bridge (mm)')
+    ylabel('Shear Force (N)')
 
     grid on;
     grid minor;
@@ -399,6 +404,8 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     grid minor
     box on;
     yline(0)
+    xlabel('Position on Bridge (mm)')
+    ylabel('Bending Moment (Nmm)')
 
     % Plots BMD vs Material Moment Failures
     subplot(2,3,5);
@@ -415,6 +422,8 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     box on;
     yline(0)
     legend('', 'Matboard Tension Failure', 'Matboard Compression Failure', '', 'Location', 'Northwest', 'FontSize', 7)
+    xlabel('Position on Bridge (mm)')
+    ylabel('Bending Moment (Nmm)')
 
     subplot(2,3,6);
     hold on;
@@ -431,6 +440,8 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     box on;
     yline(0)
     legend({'', 'Mid Flange Buckling', 'Side Flange Buclking', 'Web Compression Buckling', ''}, 'Location', 'Northwest', 'FontSize', 7)
+    xlabel('Position on Bridge (mm)')
+    ylabel('Bending Moment (Nmm)')
 
 end
 
