@@ -37,7 +37,8 @@ TauG = 2;
 mu = 0.2;
 
 [Y_bridge, I_bridge, Q_bridge, b_bridge, section_heights] = SectionProperties(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt, n );
-
+Y_bridge(1)
+I_bridge(1)
 
 
 [v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
@@ -47,6 +48,8 @@ mu = 0.2;
 [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
 
 [ Pf ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3 );
+% If FailLoad returns 
+Pf
 VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3);
 
 
@@ -352,8 +355,8 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     subplot(2,3,2);
     hold on;
     plot(x, SFD);
-    plot(x, V_fail, 'r--');
-    plot(x, -V_fail, 'r--');
+    plot(x, V_fail, 'r-');
+    plot(x, -V_fail, 'r-');
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin');
     title('SFD vs Material Shear Failure')
     xlim([0,x(end)])
@@ -362,14 +365,15 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     box on;
     ylim([-max(V_fail) - 100, max(V_fail) + 100])
     yline(0)
+    legend('', '', 'Matboard Shear Failure', '', 'FontSize', 7)
 
     % Plots SFD vs V_buck
     subplot(2,3,3);
     hold on;
     
     plot(x, SFD);
-    plot(x, V_buck, 'r--');
-    plot(x, -V_buck, 'r--');
+    plot(x, V_buck, 'r-');
+    plot(x, -V_buck, 'r-');    
     
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin');
     title('SFD vs Shear Buckling Failure')
@@ -377,6 +381,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     xlim([0,x(end)]);
     ylim([-max(V_buck) - 100, max(V_buck) + 100]);
     yline(0);
+    legend('', '', 'Web Shear Buckling Failure', '', 'FontSize', 7)
 
     grid on;
     grid minor;
@@ -388,7 +393,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     plot(x, BMD);
 
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin', 'YDir', 'reverse');
-    title(("BMD from P = " + P + "N, Pfail = " +  Pfail + "N"))
+    title("BMD from P = " + P + "N, Pfail = " +  Pfail + "N")
     xlim([0,x(end)])
     grid on;
     grid minor
@@ -409,6 +414,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     grid minor
     box on;
     yline(0)
+    legend('', 'Matboard Tension Failure', 'Matboard Compression Failure', '', 'Location', 'Northwest', 'FontSize', 7)
 
     subplot(2,3,6);
     hold on;
@@ -424,6 +430,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     grid minor
     box on;
     yline(0)
+    legend({'', 'Mid Flange Buckling', 'Side Flange Buclking', 'Web Compression Buckling', ''}, 'Location', 'Northwest', 'FontSize', 7)
 
 end
 
@@ -547,6 +554,10 @@ function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1,
     buck2 = min(fail_m_buck2(fail_m_buck2>0));
     buck3 = min(fail_m_buck3(fail_m_buck3>0));
     
-    [Pf pp] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3)]);
+    vmat = min(fail_v_mat(fail_v_mat>0));
+    vbuck = min(fail_v_buck(fail_v_buck>0));
+    
+    [Pf num] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3) abs(vmat) abs(vbuck)]); 
+    % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck
 end
     
