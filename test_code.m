@@ -5,7 +5,7 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-\load = -200;
+load = -200;
 [SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
 
@@ -46,11 +46,13 @@ I_bridge(1)
 [ m_mat_tension ] = MfailMatT( I_bridge, Y_bridge, section_heights, SigT, BMD_PL);
 [ m_mat_compression ] = MfailMatC( I_bridge, Y_bridge, section_heights, SigC, BMD_PL );
 [ M_Buck1, M_Buck2, M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
+[ V_GlueTF V_GlueBF V_GlueTW V_GlueBW] = VglueFail(I_bridge, Q_bridge, b_bridge, TauG, tft, bft, section_heights, xc);
+V_GlueTW(1)
 
-[ Pf ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3 );
-% If FailLoad returns 
-Pf
-VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3);
+[ Pf Num ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
+% if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
+
+VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
 
 
 %%
@@ -332,7 +334,7 @@ function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n, I, b, Y_bar, Q)
 
 end
 
-function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3)
+function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW)
     
     figure('WindowState', 'maximized')
 
@@ -356,8 +358,23 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     subplot(2,3,2);
     hold on;
     plot(x, SFD);
-    plot(x, V_fail, 'r-');
-    plot(x, -V_fail, 'r-');
+    plot(x, V_fail(V_fail~=0), 'r-');
+    plot(x, -V_fail(V_fail~=0), 'r-');
+    
+    plot(x, V_GlueTF(V_GlueTF~=0), 'g-')
+    plot(x, -V_GlueTF(V_GlueTF~=0), 'g-')
+    
+    plot(x, V_GlueBF(V_GlueBF~=0), 'b-')
+    plot(x, -V_GlueBF(V_GlueBF~=0), 'b-')
+    
+    plot(x, V_GlueTW(V_GlueTW~=0), 'm-')
+    plot(x, -V_GlueTW(V_GlueTW~=0), 'm-')
+
+    plot(x, V_GlueBW(V_GlueBW~=0), 'c-')
+    plot(x, -V_GlueBW(V_GlueBW~=0), 'c-')
+
+
+
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin');
     title('SFD vs Material Shear Failure')
     xlim([0,x(end)])
@@ -366,7 +383,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     box on;
     ylim([-max(V_fail) - 100, max(V_fail) + 100])
     yline(0)
-    legend('', '', 'Matboard Shear Failure', '', 'FontSize', 7)
+    legend('', '', 'Matboard Shear Failure', '', 'Glue Shear (TF) Failure', '',  'Glue Shear (BF) Failure', '', 'Glue Shear (TW) Failure', '', 'Glue Shear (BW) Failure', 'FontSize', 7)
     xlabel('Position on Bridge (mm)')
     ylabel('Shear Force (N)')
 
@@ -541,7 +558,7 @@ function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, w
     end
 end
 
-function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, n )
+function [ Pf num ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW )
     % Calculates the magnitude of the load P that will cause one of the failure mechanisms to occur
     %   Input: SFD, BMD under the currently applied points loads (P) (each 1-D array of length n)
     %       {V_Mat, V_Glue, … M_MatT, M_MatC, … } (each 1-D array of length n)
@@ -559,6 +576,11 @@ function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1,
     fail_m_buck2 = M_Buck2 ./ BMD_new;
     fail_m_buck3 = M_Buck3 ./ BMD_new;
 
+    fail_v_gluetf = V_GlueTF ./ SFD_new;
+    fail_v_gluebf = V_GlueBF ./ SFD_new;
+    fail_v_gluetw = V_GlueTW ./ SFD_new;
+    fail_v_gluebw = V_GlueBW ./ SFD_new;
+
     matt = min(fail_m_matt(fail_m_matt>0));
     matc = min(fail_m_matc(fail_m_matc>0));
     buck1 = min(fail_m_buck1(fail_m_buck1>0));
@@ -568,7 +590,40 @@ function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1,
     vmat = min(fail_v_mat(fail_v_mat>0));
     vbuck = min(fail_v_buck(fail_v_buck>0));
     
-    [Pf num] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3) abs(vmat) abs(vbuck)]); 
-    % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck
-end
+    vgluetf = min(fail_v_gluetf(fail_v_gluetf>0));
+    vgluebf = min(fail_v_gluebf(fail_v_gluebf>0));
+    vgluetw = min(fail_v_gluetw(fail_v_gluetw>0));
+    vgluebw = min(fail_v_gluebw(fail_v_gluebw>0));
     
+    [Pf num] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3) abs(vmat) abs(vbuck) abs(vgluetf) abs(vgluebf) abs(vgluetw) abs(vgluebw)]); 
+    % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
+end
+
+function [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW ] = VglueFail(I, Q, b, TauG, tft, bft, heights, csc)
+    V_GlueBF = NaN(1,length(heights));
+    V_GlueTF = NaN(1,length(heights));
+    V_GlueTW = NaN(1,length(heights));
+    V_GlueBW = NaN(1,length(heights));
+    for i = 1 : length(heights)
+        z = find(csc <= i, 1, 'last');
+        % Top Flange Glue
+        if (tft(z) / 1.27) > 1
+            glue_y = ceil(heights(i) - 1.27);
+            V_GlueTF(i) = (TauG * b(i, glue_y) * I(i)) / ((Q(i, floor(heights(i) - 1.27)) + Q(i, ceil(heights(i) - 1.27))) / 2);
+        end
+        % Bottom Flange Glue
+        if (bft(z) / 1.27) > 1
+            glue_y = floor(1.27);
+            V_GlueBF(i) = (TauG * b(i, glue_y) * I(i)) / ((Q(i, floor(1.27)) + Q(i, ceil(1.27)))/2);
+        end
+
+        % Top web/flange glue (there will always be a top flange therefore no if statement needed) 
+        %   (note: rounds up heights(i) - tft(i) in order to get smaller b value and larger Q value in order to get lower V_GlueTW for saftey
+        V_GlueTW(i) = (TauG * b(i, floor(heights(i) - tft(z))) * I(i)) / ((Q(i, floor(heights(i) - tft(z))) + Q(i, ceil(heights(i) - tft(z)))) / 2);
+        
+        % Bottom web/flange glue (note: rounds up bft(i) in order to get smaller b value and larger Q value in order to get lower V_GlueBW for saftey
+        if bft(z) > 0  
+            V_GlueBW(i) = (TauG * b(i, ceil(bft(z))) * I(i)) / ((Q(i, floor(bft(z))) + Q(i, ceil(bft(z))))/2);
+        end
+    end
+end
