@@ -45,10 +45,9 @@ mu = 0.2;
 [ m_mat_tension ] = MfailMatT( I_bridge, Y_bridge, section_heights, SigT, BMD_PL);
 [ m_mat_compression ] = MfailMatC( I_bridge, Y_bridge, section_heights, SigC, BMD_PL );
 [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
-VisulizePL(x, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3);
-
 
 [ Pf ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3 );
+VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3);
 
 
 %%
@@ -331,7 +330,7 @@ function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n, I, b, Y_bar, Q)
 
 end
 
-function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3)
+function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3)
     
     figure('WindowState', 'maximized')
 
@@ -341,7 +340,7 @@ function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M
     plot(x, SFD);
 
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin');
-    title('SFD from P = 315N, Pfail = ')
+    title(("SFD from P = " + P + "N, Pfail = " +  Pfail + "N"))
     xlim([0,x(end)])
     grid on;
     grid minor
@@ -389,7 +388,7 @@ function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M
     plot(x, BMD);
 
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin', 'YDir', 'reverse');
-    title('BMD from P = 315N, Pfail = ')
+    title(("BMD from P = " + P + "N, Pfail = " +  Pfail + "N"))
     xlim([0,x(end)])
     grid on;
     grid minor
@@ -419,7 +418,7 @@ function [] = VisulizePL(x, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M
     plot(x, M_Buck3);
     
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin', 'YDir', 'reverse');
-    title('BMD vs Material Moment Failures ')
+    title('BMD vs Material Buckling Failures ')
     xlim([0,x(end)])
     grid on;
     grid minor
