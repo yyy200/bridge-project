@@ -52,6 +52,19 @@ V_GlueTW(1)
 [ Pf Num ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
 % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
 
+% FAILURE TYPES:
+% matt = moment matboard tension failure
+% matc = moment matboard compression failure
+% buck1 = case 1 buckling of top or bottom flange (center part between webs)
+% buck2 = case 2 buckling of top or bottom flange (part that sticks out past the webs)
+% buck3 = case 3 buckling of left and right webs
+% vmat = matboard shear failure
+% vbuck = matboard shear buckling failure
+% vgluetf = shear glue failure of top flange
+% vgluebf = shear glue failure of bottom flange
+% vgluetw = shear glue failure of top flange/web connection
+% vgluebw = shear glue failure of bottom flange/web connection
+
 VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
 
 
@@ -562,7 +575,7 @@ function [ Pf num ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Bu
     % Calculates the magnitude of the load P that will cause one of the failure mechanisms to occur
     %   Input: SFD, BMD under the currently applied points loads (P) (each 1-D array of length n)
     %       {V_Mat, V_Glue, … M_MatT, M_MatC, … } (each 1-D array of length n)
-    %   Output: Failure Load value Pf
+    %   Output: Failure Load value Pf and type of failure
 
     SFD_new = SFD ./ abs(P);
     BMD_new = BMD ./ abs(P);
