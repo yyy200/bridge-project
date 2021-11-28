@@ -1,0 +1,17 @@
+Dimentions:
+
+xc = [0 550 1060 L]; % Location, x, of cross-section change
+tfw = [100 100 100 100]; % Top Flange Width
+tft = [1.27 1.27 1.27 1.27]; % Top Flange Thickness
+hw = [72.46 72.46 72.46 72.46]; % Web Height
+tw = [1.27 1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
+bfw = [80 80 80 80]; % Bottom Flange Width
+bft = [1.27 1.27 1.27 1.27]; % Bottom Flange Thickness
+a = [0 550 1060 L]; % Diaphragm x coords
+ws = [77.46 77.46 77.46 77.46]; % Web Spacing
+rtw = [10 10 10 10]; % little rectanges at top of webs for glue area width
+rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
+rbw = [0 0 0 0]; % little rectanges at bottom of webs for glue area width
+rbt = [0 0 0 0]; % little rectanges at bottom of webs for glue area thickness
+
+Failure Load Values:

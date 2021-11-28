@@ -48,8 +48,9 @@ I_bridge(1)
 [ M_Buck1, M_Buck2, M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
 [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW] = VglueFail(I_bridge, Q_bridge, b_bridge, TauG, tft, bft, section_heights, xc);
 V_GlueTW(1)
+section_heights(1) - Y_bridge(1)
 
-[ Pf Num ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
+[ Pf Num ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, true, "Design0");
 % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
 
 % FAILURE TYPES:
@@ -554,14 +555,14 @@ function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, w
                 if BMD(i) < 0 % if moment negative, compression on bottom
                     t = wt(z);
                     y = bft(z) - Y_bar(i) ;
-                    b = abs(y);
+                    b = abs(y) - bft(z);
                     if b ~= 0
                         M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
                     end
                 elseif BMD(i) > 0 % if moment positive, compression on top
                     t = wt(z);
-                    y = heights(i) - Y_bar(i) - tft(z);
-                    b = abs(y);
+                    y = heights(i) - Y_bar(i);
+                    b = abs(y)- tft(z);
                     if b ~= 0
                         M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
                     end
@@ -571,7 +572,7 @@ function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, w
     end
 end
 
-function [ Pf num ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW )
+function [ Pf num ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, write_to_xls, design_name )
     % Calculates the magnitude of the load P that will cause one of the failure mechanisms to occur
     %   Input: SFD, BMD under the currently applied points loads (P) (each 1-D array of length n)
     %       {V_Mat, V_Glue, … M_MatT, M_MatC, … } (each 1-D array of length n)
@@ -607,6 +608,45 @@ function [ Pf num ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Bu
     vgluebf = min(fail_v_gluebf(fail_v_gluebf>0));
     vgluetw = min(fail_v_gluetw(fail_v_gluetw>0));
     vgluebw = min(fail_v_gluebw(fail_v_gluebw>0));
+
+    if write_to_xls == true
+        filename = design_name + '.xls';
+        writematrix(design_name, filename);
+
+        writematrix("Moment Matboard Tension Failure", filename, 'range', 'A2')
+        writematrix(matt, filename, 'range', 'B2:C2');
+
+        writematrix("Moment Matboard Compression Failure", filename, 'range', 'A3')
+        writematrix(matc, filename, 'range', 'B3:C3');
+
+        writematrix("Case 1 Buckling of Top or Bottom Flange (center part between webs)", filename, 'range', 'A4')
+        writematrix(buck1, filename, 'range', 'B4:C4');
+       
+        writematrix("Case 2 Buckling of Top or Bottom Flange (part that sticks out past the webs)", filename, 'range', 'A5')
+        writematrix(buck2, filename, 'range', 'B5:C5');
+
+        writematrix("Case 3 Buckling of Left and Right Webs", filename, 'range', 'A6')
+        writematrix(buck3, filename, 'range', 'B6:C6');
+        
+        writematrix("Matboard Shear Failure", filename, 'range', 'A7')
+        writematrix(vmat, filename, 'range', 'B7:C7');
+
+        writematrix("Matboard Shear Buckling Failure", filename, 'range', 'A8')
+        writematrix(vbuck, filename, 'range', 'B8:C8');
+
+        writematrix("Shear Glue Failure of Top Flange", filename, 'range', 'A9')
+        writematrix(vgluetf, filename, 'range', 'B9:C9');
+
+        writematrix("Shear Glue Failure of Bottom Flange", filename, 'range', 'A10')
+        writematrix(vgluebf, filename, 'range', 'B10:C10');
+
+        writematrix("Shear Glue Failure of Top Flange/Web Connection", filename, 'range', 'A11')
+        writematrix(vgluetw, filename, 'range', 'B11:C11');
+
+        writematrix("Shear Glue Failure of Bottom Flange/Web Connection", filename, 'range', 'A12')
+        writematrix(vgluebw, filename, 'range', 'B12:C12');
+    end
+
     
     [Pf num] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3) abs(vmat) abs(vbuck) abs(vgluetf) abs(vgluebf) abs(vgluetw) abs(vgluebw)]); 
     % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
