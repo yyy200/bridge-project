@@ -5,7 +5,7 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-load = -193;
+load = -690;
 [SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
 
@@ -13,17 +13,17 @@ load = -193;
 % There are many (more elegant ways) to construct cross-section objects
 xc = [0 550 1060 L]; % Location, x, of cross-section change
 tfw = [100 100 100 100]; % Top Flange Width
-tft = [1.27 1.27 1.27 1.27]; % Top Flange Thickness
+tft = [1.27 1.27 1.27 1.27]*2; % Top Flange Thickness
 hw = [72.46 72.46 72.46 72.46]; % Web Height
-tw = [1.27 1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
-bfw = [80 80 80 80]; % Bottom Flange Width
-bft = [1.27 1.27 1.27 1.27]; % Bottom Flange Thickness
+tw = [1.27 1.27 2*1.27 2*1.27]*2; % Web Thickness (Assuming 2 separate webs)
+bfw = [80 85 85 85]; % Bottom Flange Width
+bft = [1.27 1.27 1.27 1.27]*2; % Bottom Flange Thickness
 a = [0 550 1060 L]; % Diaphragm x coords
-ws = [77.46 77.46 77.46 77.46]; % Web Spacing
+ws = [74.92 74.92 69.84 69.84]; % Web Spacing
 rtw = [10 10 10 10]; % little rectanges at top of webs for glue area width
 rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
-rbw = [0 0 0 0]; % little rectanges at bottom of webs for glue area width
-rbt = [0 0 0 0]; % little rectanges at bottom of webs for glue area thickness
+rbw = [10 10 10 10]; % little rectanges at bottom of webs for glue area width
+rbt = [1.27 1.27 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
 VisualizeBridge(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
@@ -48,7 +48,10 @@ mu = 0.2;
 
 [ Pf ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3 );
 VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3);
+Pf
 
+[ material_ok ] = MaterialCheck(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
+"Material is: " +  material_ok
 
 %%
 function [ SFD, BMD, Loads ] = ApplyPL( xP, P, x, Loads, n )
@@ -144,6 +147,10 @@ function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw
         axis equal
         
     end
+end
+
+function out = getVarName(var)
+    out = inputname(1);
 end
 
 %%
@@ -412,10 +419,10 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
 
     subplot(2,3,6);
     hold on;
-    plot(x, BMD);
-    plot(x, M_Buck1);
-    plot(x, M_Buck2);
-    plot(x, M_Buck3);
+    plot(x, BMD, "c-");
+    plot(x, M_Buck1, "g--");
+    plot(x, M_Buck2, "b--");
+    plot(x, M_Buck3, "r--");
     
     set(gca, 'XAxisLocation', 'bottom', 'YAxisLocation', 'origin', 'YDir', 'reverse');
     title('BMD vs Material Buckling Failures ')
@@ -523,11 +530,12 @@ function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, w
     end
 end
 
-function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, n )
+function [ Pf, failure_mode ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, n )
     % Calculates the magnitude of the load P that will cause one of the failure mechanisms to occur
     %   Input: SFD, BMD under the currently applied points loads (P) (each 1-D array of length n)
     %       {V_Mat, V_Glue, … M_MatT, M_MatC, … } (each 1-D array of length n)
     %   Output: Failure Load value Pf
+    results = ["Tension Failure", "Compression Failure", "Center Flange Buckling", "Protruding Flange Buckling", "Web Buckling"];
 
     SFD_new = SFD ./ abs(P);
     BMD_new = BMD ./ abs(P);
@@ -548,5 +556,29 @@ function [ Pf ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_MatC, M_Buck1,
     buck3 = min(fail_m_buck3(fail_m_buck3>0));
     
     [Pf pp] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3)]);
+    failure_mode = results(pp)
+
 end
-    
+
+function [material_ok] = MaterialCheck( xc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw, rbh)
+    matboard_thickness = 1.27;
+
+    top = tfw .* tft;
+    top_glues = 2 * rh .* rw;
+    bottom_glues = 2 * rbh .* rbw;
+    webs = 2 * wh .* wt;
+    bottom  = bfw .* bft;
+
+    total_cross_section_width = (top + top_glues + bottom_glues + webs + bottom)/matboard_thickness;
+
+    safety_factor = .9;
+
+    total_area  = 0;
+    for i = 2:length(xc)
+        delta_x = xc(i) - xc(i - 1);
+        total_area  = total_area + delta_x * total_cross_section_width(i);
+    end
+
+    total_material_area = 813 * 1016;
+    material_ok = total_area < total_material_area * safety_factor;
+end
