@@ -48,7 +48,7 @@ I_bridge(1)
 [ M_Buck1, M_Buck2, M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
 [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW] = VglueFail(I_bridge, Q_bridge, b_bridge, TauG, tft, bft, section_heights, xc);
 V_GlueTW(1)
-section_heights(1) - Y_bridge(1)
+Y_bridge(1)
 
 [ Pf Num ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, true, "Design0");
 % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
@@ -554,7 +554,7 @@ function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, w
                 z = find(csc <= i, 1,'last');
                 if BMD(i) < 0 % if moment negative, compression on bottom
                     t = wt(z);
-                    y = bft(z) - Y_bar(i) ;
+                    y = - Y_bar(i);
                     b = abs(y) - bft(z);
                     if b ~= 0
                         M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
@@ -562,7 +562,7 @@ function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, w
                 elseif BMD(i) > 0 % if moment positive, compression on top
                     t = wt(z);
                     y = heights(i) - Y_bar(i);
-                    b = abs(y)- tft(z);
+                    b = abs(y) - tft(z);
                     if b ~= 0
                         M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
                     end
