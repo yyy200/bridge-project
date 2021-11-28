@@ -574,15 +574,15 @@ function [ M_Buck1 M_Buck2 M_Buck3 ] = MfailBuck( csc, bfw, bft, tfw, tft, ws, w
                 z = find(csc <= i, 1,'last');
                 if BMD(i) < 0 % if moment negative, compression on bottom
                     t = wt(z);
-                    y = bft(z) - Y_bar(i) ;
-                    b = abs(y);
+                    y = - Y_bar(i);
+                    b = abs(y) - bft(z);
                     if b ~= 0
                         M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
                     end
                 elseif BMD(i) > 0 % if moment positive, compression on top
                     t = wt(z);
-                    y = heights(i) - Y_bar(i) - tft(z);
-                    b = abs(y);
+                    y = heights(i) - Y_bar(i);
+                    b = abs(y) - tft(z);
                     if b ~= 0
                         M_Buck3(i) = (factor * ((t / b) ^ 2)) * I(i) / y;
                     end
