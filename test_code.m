@@ -678,7 +678,7 @@ end
 
 
 function [material_ok] = MaterialCheck( xc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw, rbh)
-    % Checks if current design overuses material
+    % Checks if current design overuses material. Note does not take into account diaphrams and uses factor of saftey of 1.1.
     %   Input: cross-sectional dimesions
     %   Output: matrial_ok (true or false) based on above conditions.
     matboard_thickness = 1.27;
@@ -701,8 +701,6 @@ function [material_ok] = MaterialCheck( xc, tfw, tft, wh, wt, ws, bfw, bft, rw, 
 
     total_material_area = 813 * 1016;
     material_ok = total_area < total_material_area * safety_factor;
-    total_area 
-    total_material_area
 end
 
 function [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW ] = VglueFail(I, Q, b, TauG, tft, bft, heights, csc)
