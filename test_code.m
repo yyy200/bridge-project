@@ -9,21 +9,6 @@ load = -1062;
 [SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
 
-%% 2. Define cross-sections
-% There are many (more elegant ways) to construct cross-section objects
-% xc = [0 350 415 600 650 800 950 980 1100, L]; % Location, x, of cross-section change
-% tfw = [100 100 100 100 100 100 100 100 100 100]; % Top Flange Width
-% tft = [1.27 1.27*1.5 1.27*2 1.27*1.5 1.27  1.27 1.27 1.27 1.27 1.27]*2; % Top Flange Thickness
-% hw = [72.46 72.46 72.46 72.46 72.46 72.46 72.46 72.46 72.46 72.46]; % Web Height
-% tw = [1.27 1.27 1.27 1.27 1.27 2*1.27  2*1.27 2*1.27  2*1.27 2*1.27]*2; % Web Thickness (Assuming 2 separate webs)
-% bfw = [80 80 80 80 80 90 90 90 90 85]; % Bottom Flange Width
-% bft = [1.27 1.27 1.27 1.27 1.27 1.27*1.5 1.27*1.5 1.27*2.5 1.27*2 1.27]*2; % Bottom Flange Thickness
-% a = [0 275 300 550 670 805 900 990 1155 L]; % Diaphragm x coords
-% ws = [74.92 74.92 74.92 74.92 74.92 74.92 74.92 74.92 74.92 74.92]; % Web Spacing
-% rtw = [10 10 10 10 10 10 10 10 10 10]; % little rectanges at top of webs for glue area width
-% rtt = [1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
-% rbw = [10 10 10 10 10 10 10 10 10 15]; % little rectanges at bottom of webs for glue area width
-% rbt = [1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
 
 %% 2. Define cross-sections
 xc = [0 550 790 L]; % Location, x, of cross-section change
@@ -51,9 +36,17 @@ TauU = 4;
 TauG = 2;
 mu = 0.2;
 
+% Calls Function to calculate geometric properties (output is in the form of arrays)
 [Y_bridge, I_bridge, Q_bridge, b_bridge, section_heights] = SectionProperties(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt, n );
-Y_bridge(1)
-I_bridge(1)
+
+% Outputs Calculations from above function for each cross section
+for n = 1:len(xc)
+    "Y bar cross section " + n + " = " Y_bridge(xc(n))
+    "I for cross section " + n + " = " I_bridge(xc(n))
+    "Q for cross section at centriod" + n + " = " Q_bridge(round(Y_bridge(xc(n))), xc(n)) % Note this value is rounded due to mm precision in Q matrix
+    "Height of cross section " + n + " = " section_heights(xc(n))
+
+
 
 
 [v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
@@ -62,10 +55,10 @@ I_bridge(1)
 [ m_mat_compression ] = MfailMatC( I_bridge, Y_bridge, section_heights, SigC, BMD_PL );
 [ M_Buck1, M_Buck2, M_Buck3 ] = MfailBuck( xc, bfw, bft, tfw, tft, ws, tw, section_heights, Y_bridge, I_bridge, E, mu, BMD_PL);
 [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW] = VglueFail(I_bridge, Q_bridge, b_bridge, TauG, tft, bft, section_heights, xc);
-V_GlueTW(1)
-% if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
 
-% FAILURE TYPES:
+
+
+% FAILURE TYPES FOR FailLoad FUNCTION:
 % matt = moment matboard tension failure
 % matc = moment matboard compression failure
 % buck1 = case 1 buckling of top or bottom flange (center part between webs)
@@ -78,11 +71,15 @@ V_GlueTW(1)
 % vgluetw = shear glue failure of top flange/web connection
 % vgluebw = shear glue failure of bottom flange/web connection
 
+% Calls function to calculate failure load and failure mode
 [ Pf, failure_mode ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, true, "Design0");
 VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
-Pf
-failure_mode
 
+% Outputs Failure load and fail type
+"Pfail = " + Pf
+"Failure mode = " failure_mode
+
+% Calls function to check if design overuses material
 [ material_ok ] = MaterialCheck(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
 "Material is: " +  material_ok
 
@@ -133,8 +130,8 @@ end
 function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw, rbh)
     % Provides a graphical interpretation of user geometric inputs
     %    Input: cross section changes x cordinates, top flange width, top flange thinckness, web height, web thickness, web spacing,
-    %        bottom flange width, bottom flange thickness
-    %    Output: polygons of crossections
+    %        bottom flange width, bottom flange thickness, etc...
+    %    Output: plots polygons of crossections
     
     for i = 1:length(csc)
         % Calculates basic coordinates of features
@@ -170,8 +167,11 @@ function [ ] = VisualizeBridge( csc, tfw, tft, wh, wt, ws, bfw, bft, rw, rh, rbw
         cross_section_shape = polyshape(outside_x_cords, outside_y_cords);
         cross_section_shape = addboundary(cross_section_shape, inside_x_cords, inside_y_cords);
 
+        % Plots polygons
         subplot(ceil(length(csc)/ 2), ceil(length(csc)/ 2), i)
         plot(cross_section_shape)
+
+        % Labels Plots
         if i ~= 1
             title("Cross Section from x = " + csc(i-1) + " to " + csc(i))
         else
@@ -190,7 +190,7 @@ end
 function [ Y_bar, I, Q, b, heights ] = SectionProperties( csc, tfw, tft, wh, wt, ws, bfw, bft, rtw, rtt, rbw, rbt, n )
     % Calculates important sectional properties. Including but not limited to ybar, I, Q, etc.
     %    Input: cross section changes x cordinates, top flange width, top flange thinckness, web height, web thickness, web spacing,
-    %        bottom flange width, bottom flange thickness
+    %        bottom flange width, bottom flange thickness, etc
     % Output: Sectional Properties at every value of x. Each property is a 1-D array of length n
 
     Y_bar = zeros(1,n);
@@ -333,8 +333,8 @@ end
 
 function [ V_fail ] = Vfail( I, b, Y_bar, TauU, Q)
     % Calculates shear forces at every value of x that would cause a matboard shear failure
-    % Input: Sectional Properties (list of 1-D arrays), TauU (scalar material property)
-    % Output: V_fail a 1-D array of length n
+    %   Input: Sectional Properties (list of 1-D arrays), TauU (scalar material property)
+    %   Output: V_fail a 1-D array of length n
     Qcent = zeros(1,length(Y_bar));
     bcent = zeros(1,length(Y_bar));
     for i = 1:length(Y_bar)
@@ -348,32 +348,38 @@ end
 
 function [ V_Buck ] = VfailBuck(csc, wt, ds, wh, E, mu, n, I, b, Y_bar, Q)
     % Calculates shear forces at every value of x that would cause a shear buckling failure in the web
-    %   Input: Sectional Properties (list of 1-D arrays), E, mu (material property)
+    %   Input: Sectional Properties (list of 1-D arrays), E, mu (material property), etc...
     %   Output: V_Buck a 1-D array of length n
 
-        
     factor = (5 * (pi ^ 2) * E ) / (12 * (1 - (mu ^ 2) ));
 
     a_values = zeros(1, n);
     web_thicknesses = zeros(1, n);
     web_heights = zeros(1, n);
+
+    % Finds web thicknesses, web heights and a values for cross sections
     for i = 1:(length(csc)-1)
         web_thicknesses((csc(i)+1):(csc(i+1))) = wt(i);
         web_heights((csc(i)+1):(csc(i+1))) = wh(i);
         a_values((csc(i)+1):(csc(i+1))) = ds(i+1) - ds(i);
     end
-       
+    
+    % Finds TauCrit
     TauCrit = factor .* (((web_thicknesses ./ web_heights) .^ 2) + ((web_thicknesses ./ a_values) .^ 2));
 
+    % Calls V_fail function using tau crit value above 
     [ V_Buck ] = Vfail( I, b, Y_bar, TauCrit, Q);
 
 end
 
+
 function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW)
-    
+    % Plots all graphs (i.e BMD, SFD, Failure loads etc...)
+    %   Inputs: All failure condition loads as arrays of length n, SFD, BMD,
+    %   Outputs: Plots of above values/arrays
     figure('WindowState', 'maximized')
 
-    % Plots SFD for Pfail
+    % Plots SFD for Pfail and lables
     subplot(2,3,1);
     hold on;
     plot(x, SFD);
@@ -389,7 +395,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     ylabel('Shear Force (N)')
 
 
-    % Plots BMD vs V_buck
+    % Plots BMD vs V_buck and lables
     subplot(2,3,2);
     hold on;
     plot(x, SFD);
@@ -422,7 +428,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     xlabel('Position on Bridge (mm)')
     ylabel('Shear Force (N)')
 
-    % Plots SFD vs V_buck
+    % Plots SFD vs V_buck and lables
     subplot(2,3,3);
     hold on;
     
@@ -444,7 +450,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     grid minor;
     box on;
     
-    % Plots BMD for Pfail
+    % Plots BMD for Pfail and lables
     subplot(2,3,4);
     hold on;
     plot(x, BMD);
@@ -459,7 +465,7 @@ function [] = VisulizePL(x, P, Pfail, SFD, BMD, V_fail, V_buck, M_MatT, M_MatC, 
     xlabel('Position on Bridge (mm)')
     ylabel('Bending Moment (Nmm)')
 
-    % Plots BMD vs Material Moment Failures
+    % Plots BMD vs Material Moment Failures and lables
     subplot(2,3,5);
     hold on;
     plot(x, BMD);
@@ -499,8 +505,8 @@ end
 
 function [ M_MatT ] = MfailMatT( I, Y_bar, heights, SigT, BMD )
     % Calculates bending moments at every value of x that would cause a matboard tension failure
-    % Input: Sectional Properties (list of 1-D arrays), SigT (material property), BMD (1-D array)
-    % Output: M_MatT a 1-D array of length n
+    %   Input: Sectional Properties (list of 1-D arrays), SigT (material property), BMD (1-D array), etc...
+    %   Output: M_MatT a 1-D array of length n
     for i = 1 : length(BMD)
         if BMD(i) > 0 % If the moment is positive, the tension failure will be at the bottom
             M_MatT(i) = SigT * I(i) / (Y_bar(i));
@@ -512,7 +518,7 @@ end
 
 function [ M_MatC ] = MfailMatC( I, Y_bar, heights, SigC, BMD ) % Similar to MfailMatT
     % Calculates bending moments at every value of x that would cause a matboard Compression failure
-    %   Input: Sectional Properties (list of 1-D arrays), SigC (material property), BMD (1-D array)
+    %   Input: Sectional Properties (list of 1-D arrays), SigC (material property), BMD (1-D array), etc...
     %   Output: M_MatC a 1-D array of length n
     for i = 1 : length(BMD)
         if BMD(i) > 0 % If the moment is positive, the compression failure will be at the top
@@ -669,10 +675,10 @@ function [ Pf, failure_mode ] = FailLoad( P, SFD, BMD, V_Mat, V_Buck, M_MatT, M_
     end
 
     results = ["Tension Failure", "Compression Failure", "Center Flange Buckling", "Protruding Flange Buckling", "Web Buckling", "V material", "vbuck", "Glue Shear tf", "Glue Shear bottom", "glue shear top width", "glue shear bottom width"];
-    [Pf pp] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3) abs(vmat) abs(vbuck) abs(vgluetf) abs(vgluebf) abs(vgluetw) abs(vgluebw)]); 
-    % if NUM = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
+    [Pf, fail_index] = min([abs(matt) abs(matc) abs(buck1) abs(buck2) abs(buck3) abs(vmat) abs(vbuck) abs(vgluetf) abs(vgluebf) abs(vgluetw) abs(vgluebw)]); 
+    % if fail_index = 1: matt, 2: matc, 3: buck1, 4: buck2, 5: buck3, 6: vmat, 7: vbuck, 8: vgluetf, 9: vgluebf, 10: vgluetw, 11: vgluebw
     
-    failure_mode = results(pp)
+    failure_mode = results(fail_index);
 
 end
 
@@ -683,7 +689,7 @@ function [material_ok] = MaterialCheck( xc, tfw, tft, wh, wt, ws, bfw, bft, rw, 
     top_glues = 2 * rh .* rw;
     bottom_glues = 2 * rbh .* rbw;
     webs = 2 * wh .* wt;
-    bottom  = bfw .* bft;
+    bottom = bfw .* bft;
 
     total_cross_section_width = (top + top_glues + bottom_glues + webs + bottom)/matboard_thickness;
 
