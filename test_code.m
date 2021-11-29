@@ -5,7 +5,7 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-load = -205;
+load = -1062;
 [SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
 
@@ -25,19 +25,20 @@ load = -205;
 % rbw = [10 10 10 10 10 10 10 10 10 15]; % little rectanges at bottom of webs for glue area width
 % rbt = [1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
 
-xc = [0, 800, L]
-tfw = [100 100 100]
-tft = [0, 1.27*4 1.27]
-hw = [72.46 72.46 72.46]
-tw = [1.27 1.27*1.5 2*1.27]*2
-bfw = [0 0 90]
-bft = [0 0 1.27*2]
-a = xc
-ws = [74.92 74.92 74.92]
-rtw = [10 10 10]
-rtt = [1.27 1.27 1.27]
-rbw = [0 0 10]
-rbt = [0 0 1.27]
+%% 2. Define cross-sections
+xc = [0 550 790 L]; % Location, x, of cross-section change
+tfw = [130 130 120 120]; % Top Flange Width
+tft = [2.54 2.54 1.27 1.27]; % Top Flange Thickness
+hw = [112.46 112.46 112.46 112.46]; % Web Height
+tw = [1.27 1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
+bfw = [0 0 120 120]; % Bottom Flange Width
+bft = [0 0 2.54 2.54]; % Bottom Flange Thickness
+a = [0:113.6:L]; % Diaphragm x coords
+ws = [77.46 77.46 77.46 77.46]; % Web Spacing
+rtw = [5 5 5 5]; % little rectanges at top of webs for glue area width
+rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
+rbw = [0 0 5 5]; % little rectanges at bottom of webs for glue area width
+rbt = [0 0 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
 VisualizeBridge(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
@@ -686,7 +687,7 @@ function [material_ok] = MaterialCheck( xc, tfw, tft, wh, wt, ws, bfw, bft, rw, 
 
     total_cross_section_width = (top + top_glues + bottom_glues + webs + bottom)/matboard_thickness;
 
-    safety_factor = .8;
+    safety_factor = .9;
 
     total_area  = 0;
     for i = 2:length(xc)
@@ -696,6 +697,8 @@ function [material_ok] = MaterialCheck( xc, tfw, tft, wh, wt, ws, bfw, bft, rw, 
 
     total_material_area = 813 * 1016;
     material_ok = total_area < total_material_area * safety_factor;
+    total_area 
+    total_material_area
 end
 
 function [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW ] = VglueFail(I, Q, b, TauG, tft, bft, heights, csc)

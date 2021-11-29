@@ -1,0 +1,14 @@
+%% 2. Define cross-sections
+xc = [0 550 790 L]; % Location, x, of cross-section change
+tfw = [130 130 120 120]; % Top Flange Width
+tft = [2.54 2.54 1.27 1.27]; % Top Flange Thickness
+hw = [112.46 112.46 112.46 112.46]; % Web Height
+tw = [1.27 1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
+bfw = [0 0 120 120]; % Bottom Flange Width
+bft = [0 0 2.54 2.54]; % Bottom Flange Thickness
+a = [0:113.6:L]; % Diaphragm x coords
+ws = [77.46 77.46 77.46 77.46]; % Web Spacing
+rtw = [5 5 5 5]; % little rectanges at top of webs for glue area width
+rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
+rbw = [0 0 5 5]; % little rectanges at bottom of webs for glue area width
+rbt = [0 0 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
