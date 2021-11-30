@@ -1,0 +1,6 @@
+Our Design
+delfection = 0.3540    1.1187
+
+
+Design 0
+delfection = -0.2056    1.3727

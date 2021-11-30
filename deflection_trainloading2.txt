@@ -1,7 +1,5 @@
 Our Cross Sections
-
-delfection = -0.0003    0.4533
+delfection = 1.6391    1.1855
 
 Desgin 0
-
-delfection =-0.0002    1.0742
+delfection = 3.5986    2.5242

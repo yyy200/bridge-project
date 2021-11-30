@@ -1,8 +1,6 @@
 Our Cross Sections
-
-delfection = -0.0005    0.9058
+delfection =2.6114    1.7051
 
 Design 0
+delfection = 6.1959    3.8822
 
-delfection =
-   -0.0000    2.3137

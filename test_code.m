@@ -6,27 +6,27 @@ P = zeros(1,n); % Initializes Loads
 
 %% 1. Point Loading Analysis (SFD, BMD)
 load = -200/3
-[SFD_PL, BMD_PL, P] = ApplyPL(102 + 292, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(278 + 292, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(442 + 292, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(618 + 292, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(782 + 292, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(958 + 292, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(1, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(278 - 102, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(442 - 102, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(618 - 102, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(782 - 102, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(958 - 102, load, x, P, n); % Construct SFD, BMD
 
 %% 2. Define cross-sections
-xc = [0 550 790 L]; % Location, x, of cross-section change
-tfw = [130 130 120 120]; % Top Flange Width
-tft = [2.54 2.54 1.27 1.27]; % Top Flange Thickness
-hw = [112.46 112.46 112.46 112.46]; % Web Height
+xc = [0 550 1060 L]; % Location, x, of cross-section change
+tfw = [100 100 100 100]; % Top Flange Width
+tft = [1.27 1.27 1.27 1.27]; % Top Flange Thickness
+hw = [72.46 72.46 72.46 72.46]; % Web Height
 tw = [1.27 1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
-bfw = [0 0 120 120]; % Bottom Flange Width
-bft = [0 0 2.54 2.54]; % Bottom Flange Thickness
-a = [0:113.6:L]; % Diaphragm x coords
+bfw = [80 80 80 80]; % Bottom Flange Width
+bft = [1.27 1.27 1.27 1.27]; % Bottom Flange Thickness
+a = [0 550 1060 L]; % Diaphragm x coords
 ws = [77.46 77.46 77.46 77.46]; % Web Spacing
-rtw = [5 5 5 5]; % little rectanges at top of webs for glue area width
+rtw = [10 10 10 10]; % little rectanges at top of webs for glue area width
 rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
-rbw = [0 0 5 5]; % little rectanges at bottom of webs for glue area width
-rbt = [0 0 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
+rbw = [0 0 0 0]; % little rectanges at bottom of webs for glue area width
+rbt = [0 0 0 0]; % little rectanges at bottom of webs for glue area thickness
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
 VisualizeBridge(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
@@ -763,8 +763,8 @@ function [deflection] = findDeflection(start, ref, BMD, E, I_bridge)
     
     PHI = BMD./(E * I_bridge);
     
-    delta_ref = trapz(PHI(start:ref)) * centroid_ref;
-    delta_mid = trapz(PHI(start:mid)) * centroid_mid;
+    delta_ref = trapz(PHI(start:ref)) * abs(centroid_ref - ref);
+    delta_mid = trapz(PHI(start:mid)) * abs(centroid_mid - mid);
 
     deflection = delta_ref/2 - delta_mid;
 end
