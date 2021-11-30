@@ -5,39 +5,29 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-load = -205;
-[SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
+load = -200/3
+[SFD_PL, BMD_PL, P] = ApplyPL(102 + 292, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(278 + 292, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(442 + 292, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(618 + 292, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(782 + 292, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(958 + 292, load, x, P, n); % Construct SFD, BMD
 
+   
 %% 2. Define cross-sections
-% There are many (more elegant ways) to construct cross-section objects
-% xc = [0 350 415 600 650 800 950 980 1100, L]; % Location, x, of cross-section change
-% tfw = [100 100 100 100 100 100 100 100 100 100]; % Top Flange Width
-% tft = [1.27 1.27*1.5 1.27*2 1.27*1.5 1.27  1.27 1.27 1.27 1.27 1.27]*2; % Top Flange Thickness
-% hw = [72.46 72.46 72.46 72.46 72.46 72.46 72.46 72.46 72.46 72.46]; % Web Height
-% tw = [1.27 1.27 1.27 1.27 1.27 2*1.27  2*1.27 2*1.27  2*1.27 2*1.27]*2; % Web Thickness (Assuming 2 separate webs)
-% bfw = [80 80 80 80 80 90 90 90 90 85]; % Bottom Flange Width
-% bft = [1.27 1.27 1.27 1.27 1.27 1.27*1.5 1.27*1.5 1.27*2.5 1.27*2 1.27]*2; % Bottom Flange Thickness
-% a = [0 275 300 550 670 805 900 990 1155 L]; % Diaphragm x coords
-% ws = [74.92 74.92 74.92 74.92 74.92 74.92 74.92 74.92 74.92 74.92]; % Web Spacing
-% rtw = [10 10 10 10 10 10 10 10 10 10]; % little rectanges at top of webs for glue area width
-% rtt = [1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
-% rbw = [10 10 10 10 10 10 10 10 10 15]; % little rectanges at bottom of webs for glue area width
-% rbt = [1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
-
-xc = [0, 800, L]
-tfw = [100 100 100]
-tft = [0, 1.27*4 1.27]
-hw = [72.46 72.46 72.46]
-tw = [1.27 1.27*1.5 2*1.27]*2
-bfw = [0 0 90]
-bft = [0 0 1.27*2]
-a = xc
-ws = [74.92 74.92 74.92]
-rtw = [10 10 10]
-rtt = [1.27 1.27 1.27]
-rbw = [0 0 10]
-rbt = [0 0 1.27]
+xc = [0 550 790 L]; % Location, x, of cross-section change
+tfw = [130 130 120 120]; % Top Flange Width
+tft = [2.54 2.54 1.27 1.27]; % Top Flange Thickness
+hw = [112.46 112.46 112.46 112.46]; % Web Height
+tw = [1.27 1.27 1.27 1.27]; % Web Thickness (Assuming 2 separate webs)
+bfw = [0 0 120 120]; % Bottom Flange Width
+bft = [0 0 2.54 2.54]; % Bottom Flange Thickness
+a = [0:113.6:L]; % Diaphragm x coords
+ws = [77.46 77.46 77.46 77.46]; % Web Spacing
+rtw = [5 5 5 5]; % little rectanges at top of webs for glue area width
+rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
+rbw = [0 0 5 5]; % little rectanges at bottom of webs for glue area width
+rbt = [0 0 1.27 1.27]; % little rectanges at bottom of webs for glue area thickness
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
 VisualizeBridge(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
@@ -54,6 +44,7 @@ mu = 0.2;
 Y_bridge(1)
 I_bridge(1)
 
+delfection =  findDeflection(1, 1060, BMD_PL, E, I_bridge)
 
 [v_fail] = Vfail(I_bridge, b_bridge, Y_bridge, TauU, Q_bridge);
 [ v_buck ] = VfailBuck(xc, tw, a, hw, E, mu, n, I_bridge, b_bridge, Y_bridge, Q_bridge);
@@ -77,7 +68,7 @@ V_GlueTW(1)
 % vgluetw = shear glue failure of top flange/web connection
 % vgluebw = shear glue failure of bottom flange/web connection
 
-[ Pf, failure_mode ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, true, "Design0");
+[ Pf, failure_mode ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, true, "Bridge");
 VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
 Pf
 failure_mode
@@ -696,6 +687,8 @@ function [material_ok] = MaterialCheck( xc, tfw, tft, wh, wt, ws, bfw, bft, rw, 
 
     total_material_area = 813 * 1016;
     material_ok = total_area < total_material_area * safety_factor;
+     total_material_area - total_area 
+    total_area / total_material_area
 end
 
 function [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW ] = VglueFail(I, Q, b, TauG, tft, bft, heights, csc)
@@ -725,4 +718,31 @@ function [ V_GlueTF V_GlueBF V_GlueTW V_GlueBW ] = VglueFail(I, Q, b, TauG, tft,
             V_GlueBW(i) = (TauG * b(i, ceil(bft(z))) * I(i)) / ((Q(i, floor(bft(z))) + Q(i, ceil(bft(z))))/2);
         end
     end
+end
+
+function [deflection] = findDeflection(start, ref, BMD, E, I_bridge)
+
+    mid = round((ref - start)/2);
+
+    % find centroid for ref curve
+    matrix=BMD(start:ref)/sum(BMD(start:ref));
+    [m,n]=size(matrix);
+    [I,J]=ndgrid(1:m,1:n);
+    centroid_ref=[dot(I(:),matrix(:)),  dot(J(:),matrix(:))];
+
+    % find centroid to midpoint
+    matrix=BMD(start:mid)/sum(BMD(start:mid));
+    [m,n]=size(matrix);
+    [I,J]=ndgrid(1:m,1:n);
+    centroid_mid=[dot(I(:),matrix(:)),  dot(J(:),matrix(:))];
+
+    centroid_ref
+    centroid_mid
+    
+    PHI = BMD./(E * I_bridge);
+    
+    delta_ref = trapz(PHI(start:ref)) * centroid_ref;
+    delta_mid = trapz(PHI(start:mid)) * centroid_mid;
+
+    deflection = delta_ref/2 - delta_mid;
 end
