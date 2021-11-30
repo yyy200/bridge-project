@@ -5,7 +5,6 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-<<<<<<< HEAD
 load = -200/3
 [SFD_PL, BMD_PL, P] = ApplyPL(102 + 292, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(278 + 292, load, x, P, n); % Construct SFD, BMD
@@ -14,14 +13,6 @@ load = -200/3
 [SFD_PL, BMD_PL, P] = ApplyPL(782 + 292, load, x, P, n); % Construct SFD, BMD
 [SFD_PL, BMD_PL, P] = ApplyPL(958 + 292, load, x, P, n); % Construct SFD, BMD
 
-   
-=======
-load = -1062;
-[SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
-
-
->>>>>>> 601ea4cbaee65051e1a0e43f7f078d87481e09c9
 %% 2. Define cross-sections
 xc = [0 550 790 L]; % Location, x, of cross-section change
 tfw = [130 130 120 120]; % Top Flange Width
@@ -86,12 +77,8 @@ delfection =  findDeflection(1, 1060, BMD_PL, E, I_bridge)
 % vgluetw = shear glue failure of top flange/web connection
 % vgluebw = shear glue failure of bottom flange/web connection
 
-<<<<<<< HEAD
-[ Pf, failure_mode ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, true, "Bridge");
-=======
 % Calls function to calculate failure load and failure mode
 [ Pf, failure_mode ] = FailLoad( load, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW, true, "Design0");
->>>>>>> 601ea4cbaee65051e1a0e43f7f078d87481e09c9
 VisulizePL(x, load, Pf, SFD_PL, BMD_PL, v_fail, v_buck, m_mat_tension, m_mat_compression, M_Buck1, M_Buck2, M_Buck3, V_GlueTF, V_GlueBF, V_GlueTW, V_GlueBW);
 
 % Outputs Failure load and fail type

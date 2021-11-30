@@ -1,0 +1,6 @@
+Our Design
+FOS = 2.2420275
+
+Design 0
+FOS = 0.8433
+Design 0 fails
