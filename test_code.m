@@ -5,13 +5,16 @@ x = linspace(0, L, n); % Define x coordinate
 P = zeros(1,n); % Initializes Loads 
 
 %% 1. Point Loading Analysis (SFD, BMD)
-load = -200/3
-[SFD_PL, BMD_PL, P] = ApplyPL(1, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(278 - 102, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(442 - 102, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(618 - 102, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(782 - 102, load, x, P, n); % Construct SFD, BMD
-[SFD_PL, BMD_PL, P] = ApplyPL(958 - 102, load, x, P, n); % Construct SFD, BMD
+load = -200
+[SFD_PL, BMD_PL, P] = ApplyPL(550, load, x, P, n); % Construct SFD, BMD
+[SFD_PL, BMD_PL, P] = ApplyPL(L, load, x, P, n); % Construct SFD, BMD
+
+% [SFD_PL, BMD_PL, P] = ApplyPL(102 + 292, load, x, P, n); % Construct SFD, BMD
+% [SFD_PL, BMD_PL, P] = ApplyPL(278 + 292, load, x, P, n); % Construct SFD, BMD
+% [SFD_PL, BMD_PL, P] = ApplyPL(442 + 292, load, x, P, n); % Construct SFD, BMD
+% [SFD_PL, BMD_PL, P] = ApplyPL(618 + 292, load, x, P, n); % Construct SFD, BMD
+% [SFD_PL, BMD_PL, P] = ApplyPL(782 + 292, load, x, P, n); % Construct SFD, BMD
+% [SFD_PL, BMD_PL, P] = ApplyPL(958 + 292, load, x, P, n); % Construct SFD, BMD
 
 %% 2. Define cross-sections
 xc = [0 550 1060 L]; % Location, x, of cross-section change
@@ -27,6 +30,7 @@ rtw = [10 10 10 10]; % little rectanges at top of webs for glue area width
 rtt = [1.27 1.27 1.27 1.27]; % little rectanges at top of webs for glue area thickness
 rbw = [0 0 0 0]; % little rectanges at bottom of webs for glue area width
 rbt = [0 0 0 0]; % little rectanges at bottom of webs for glue area thickness
+
 
 % Optional but you need to ensure that your geometric inputs are correctly implemented
 VisualizeBridge(xc, tfw, tft, hw, tw, ws, bfw, bft, rtw, rtt, rbw, rbt); 
